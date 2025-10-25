@@ -3,11 +3,12 @@ import { Application, Container, Graphics } from 'pixi.js';
 import { useGameStore } from '../store/useGameStore';
 
 const TILE_SIZE = 32;
-const GRID_SIZE = 20;
+const GRID_SIZE = 26;
 
 export const GameCanvas = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const basePosition = useGameStore((state) => state.basePosition);
+  const setResetZoom = useGameStore((state) => state.setResetZoom);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -56,21 +57,35 @@ export const GameCanvas = () => {
         }
       }
 
-      // Draw base building at center
+      // Draw base building at center (2x2 tiles)
       const base = new Graphics();
       base.rect(
         basePosition.x * TILE_SIZE,
         basePosition.y * TILE_SIZE,
-        TILE_SIZE,
-        TILE_SIZE
+        TILE_SIZE * 2,
+        TILE_SIZE * 2
       );
       base.fill(0xff0000); // Red
       camera.addChild(base);
 
       // Center camera on the grid
-      camera.x = app.screen.width / 2 - (GRID_SIZE * TILE_SIZE) / 2;
-      camera.y = app.screen.height / 2 - (GRID_SIZE * TILE_SIZE) / 2;
+      const defaultCameraX = app.screen.width / 2 - (GRID_SIZE * TILE_SIZE) / 2;
+      const defaultCameraY = app.screen.height / 2 - (GRID_SIZE * TILE_SIZE) / 2;
+      camera.x = defaultCameraX;
+      camera.y = defaultCameraY;
       cameraPosition = { x: camera.x, y: camera.y };
+
+      // Reset zoom function
+      const resetZoom = () => {
+        scale = 1;
+        camera.scale.set(scale);
+        camera.x = defaultCameraX;
+        camera.y = defaultCameraY;
+        cameraPosition = { x: camera.x, y: camera.y };
+      };
+
+      // Expose reset function to store
+      setResetZoom(resetZoom);
 
       // Mouse wheel zoom
       const handleWheel = (e: WheelEvent) => {
@@ -115,6 +130,7 @@ export const GameCanvas = () => {
 
     // Cleanup on unmount
     return () => {
+      setResetZoom(null);
       if (app && isInitialized) {
         try {
           app.destroy(true, { children: true });
@@ -123,7 +139,7 @@ export const GameCanvas = () => {
         }
       }
     };
-  }, [basePosition]);
+  }, [basePosition, setResetZoom]);
 
   return <div ref={canvasRef} className="w-full h-full" />;
 };
