@@ -7,17 +7,18 @@ const GRID_SIZE = 20;
 
 export const GameCanvas = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
-  const appRef = useRef<Application | null>(null);
   const basePosition = useGameStore((state) => state.basePosition);
 
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Initialize PixiJS Application
-    const app = new Application();
-    appRef.current = app;
+    let app: Application | null = null;
+    let isInitialized = false;
 
+    // Initialize PixiJS Application
     (async () => {
+      app = new Application();
+      
       await app.init({
         width: window.innerWidth,
         height: window.innerHeight - 40, // Subtract top bar height
@@ -25,7 +26,10 @@ export const GameCanvas = () => {
         resizeTo: canvasRef.current!,
       });
 
-      canvasRef.current!.appendChild(app.canvas);
+      if (!canvasRef.current) return;
+      
+      canvasRef.current.appendChild(app.canvas);
+      isInitialized = true;
 
       // Create main container for all game objects
       const world = new Container();
@@ -69,7 +73,7 @@ export const GameCanvas = () => {
       cameraPosition = { x: camera.x, y: camera.y };
 
       // Mouse wheel zoom
-      app.canvas.addEventListener('wheel', (e: WheelEvent) => {
+      const handleWheel = (e: WheelEvent) => {
         e.preventDefault();
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
         const newScale = Math.max(0.5, Math.min(2, scale * delta));
@@ -78,47 +82,45 @@ export const GameCanvas = () => {
           scale = newScale;
           camera.scale.set(scale);
         }
-      });
+      };
+      app.canvas.addEventListener('wheel', handleWheel);
 
       // Mouse drag to pan
-      app.canvas.addEventListener('mousedown', (e: MouseEvent) => {
+      const handleMouseDown = (e: MouseEvent) => {
         isDragging = true;
         dragStart = { x: e.clientX - cameraPosition.x, y: e.clientY - cameraPosition.y };
-      });
+      };
+      app.canvas.addEventListener('mousedown', handleMouseDown);
 
-      app.canvas.addEventListener('mousemove', (e: MouseEvent) => {
+      const handleMouseMove = (e: MouseEvent) => {
         if (isDragging) {
           cameraPosition.x = e.clientX - dragStart.x;
           cameraPosition.y = e.clientY - dragStart.y;
           camera.x = cameraPosition.x;
           camera.y = cameraPosition.y;
         }
-      });
-
-      app.canvas.addEventListener('mouseup', () => {
-        isDragging = false;
-      });
-
-      app.canvas.addEventListener('mouseleave', () => {
-        isDragging = false;
-      });
-
-      // Handle window resize
-      const handleResize = () => {
-        app.renderer.resize(window.innerWidth, window.innerHeight - 40);
       };
-      window.addEventListener('resize', handleResize);
+      app.canvas.addEventListener('mousemove', handleMouseMove);
 
-      // Cleanup
-      return () => {
-        window.removeEventListener('resize', handleResize);
+      const handleMouseUp = () => {
+        isDragging = false;
       };
+      app.canvas.addEventListener('mouseup', handleMouseUp);
+
+      const handleMouseLeave = () => {
+        isDragging = false;
+      };
+      app.canvas.addEventListener('mouseleave', handleMouseLeave);
     })();
 
     // Cleanup on unmount
     return () => {
-      if (appRef.current) {
-        appRef.current.destroy(true, { children: true });
+      if (app && isInitialized) {
+        try {
+          app.destroy(true, { children: true });
+        } catch (error) {
+          console.error('Error destroying PixiJS app:', error);
+        }
       }
     };
   }, [basePosition]);
