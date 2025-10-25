@@ -122,9 +122,19 @@ export async function getCommanderInterpretation(
   });
 }
 
+const PERSONALITY_LOADING_MESSAGES: Record<Personality, string> = {
+  literalist: 'analyzing command syntax',
+  paranoid: 'detecting hidden threats',
+  optimist: 'finding friendship opportunities',
+};
+
+export function getLoadingMessage(personality: Personality): string {
+  return PERSONALITY_LOADING_MESSAGES[personality];
+}
+
 export async function interpretCommandForAllCommanders(
   command: string,
-  commanders: Array<{ id: string; personality: Personality }>,
+  commanders: Array<{ id: string; name: string; personality: Personality }>,
   apiKey: string | null
 ): Promise<Map<string, string>> {
   const results = new Map<string, string>();
