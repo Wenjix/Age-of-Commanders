@@ -1,35 +1,55 @@
 import { useGameStore, type Commander } from '../store/useGameStore';
 
+const getPersonalityColors = (personality: string) => {
+  switch (personality) {
+    case 'literalist':
+      return {
+        avatar: '#6B7280', // gray-500
+        border: '#9CA3AF', // gray-400
+      };
+    case 'paranoid':
+      return {
+        avatar: '#EF4444', // red-500
+        border: '#EF4444', // red-500
+      };
+    case 'optimist':
+      return {
+        avatar: '#22C55E', // green-500
+        border: '#22C55E', // green-500
+      };
+    default:
+      return {
+        avatar: '#6B7280',
+        border: '#9CA3AF',
+      };
+  }
+};
+
 const CommanderAvatar = ({ commander }: { commander: Commander }) => {
-  // Use conditional rendering instead of dynamic class names for Tailwind
-  const avatarColorClass = 
-    commander.personality === 'literalist' ? 'bg-gray-500' :
-    commander.personality === 'paranoid' ? 'bg-red-500' :
-    'bg-green-500';
-
-  const borderColorClass = 
-    commander.personality === 'literalist' ? 'border-gray-400' :
-    commander.personality === 'paranoid' ? 'border-red-500' :
-    'border-green-500';
-
-  const tailColorClass = 
-    commander.personality === 'literalist' ? 'border-r-gray-400' :
-    commander.personality === 'paranoid' ? 'border-r-red-500' :
-    'border-r-green-500';
+  const colors = getPersonalityColors(commander.personality);
 
   return (
     <div className="flex items-start gap-3 flex-1">
-      {/* Avatar */}
-      <div className={`w-10 h-10 rounded-full ${avatarColorClass} flex items-center justify-center text-white font-bold text-lg flex-shrink-0`}>
+      {/* Avatar - using inline styles to ensure colors work */}
+      <div 
+        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
+        style={{ backgroundColor: colors.avatar }}
+      >
         {commander.name[0]}
       </div>
 
       {/* Speech Bubble */}
       <div className="flex-1">
         <div className="text-white text-sm font-semibold mb-1">{commander.name}</div>
-        <div className={`bg-gray-800 border-2 ${borderColorClass} rounded-lg px-3 py-2 relative`}>
+        <div 
+          className="bg-gray-800 border-2 rounded-lg px-3 py-2 relative"
+          style={{ borderColor: colors.border }}
+        >
           {/* Speech bubble tail */}
-          <div className={`absolute -left-2 top-3 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 ${tailColorClass}`}></div>
+          <div 
+            className="absolute -left-2 top-3 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8"
+            style={{ borderRightColor: colors.border }}
+          ></div>
           <p className="text-white text-sm">{commander.interpretation}</p>
         </div>
       </div>
