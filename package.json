@@ -1,10 +1,10 @@
 {
-  "name": "age-of-commanders-temp",
+  "name": "age-of-commanders",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
+    "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -34,3 +34,4 @@
     "vite": "^7.1.7"
   }
 }
+
