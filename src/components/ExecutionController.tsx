@@ -1,125 +1,74 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
+import { BUILDING_COSTS } from '../constants/gameConstants';
 import toast from 'react-hot-toast';
-
-const BUILDING_COSTS = {
-  wall: 5,
-  tower: 10,
-  'welcome-sign': 0, // Free (optimist's decorations)
-};
 
 export const ExecutionController = () => {
   const phase = useGameStore((state) => state.phase);
   const commanders = useGameStore((state) => state.commanders);
-  const updateCommanderActionIndex = useGameStore(
-    (state) => state.updateCommanderActionIndex
-  );
   const placeBuilding = useGameStore((state) => state.placeBuilding);
-  const deductWood = useGameStore((state) => state.deductWood);
-  const isTileOccupied = useGameStore((state) => state.isTileOccupied);
-  const wood = useGameStore((state) => state.wood);
   const setPhase = useGameStore((state) => state.setPhase);
+  const wood = useGameStore((state) => state.wood);
+  const deductWood = useGameStore((state) => state.deductWood);
+  
+  const [executionStarted, setExecutionStarted] = useState(false);
 
   useEffect(() => {
-    if (phase !== 'execute') return;
+    if (phase !== 'execute' || executionStarted) return;
 
-    const executeNextActions = () => {
-      let allComplete = true;
+    setExecutionStarted(true);
 
-      commanders.forEach((commander) => {
-        const { id, executionPlan, currentActionIndex, name } = commander;
+    // Place all secret builds immediately (but they remain hidden)
+    let totalWoodUsed = 0;
+    let totalBuildings = 0;
 
-        // Check if this commander has more actions
-        if (currentActionIndex < executionPlan.length) {
-          allComplete = false;
-          const action = executionPlan[currentActionIndex];
-
-          if (action.type === 'build') {
-            const [x, y] = action.position;
-            const cost = BUILDING_COSTS[action.building];
-
-            // Check if tile is occupied
-            if (isTileOccupied(x, y)) {
-              toast.error(
-                `${name}: Can't build ${action.building} at (${x}, ${y}) - tile occupied!`,
-                { duration: 3000 }
-              );
-              // Skip this action
-              updateCommanderActionIndex(id, currentActionIndex + 1);
-              return;
-            }
-
-            // Check if we have enough wood
-            if (cost > 0 && wood < cost) {
-              toast.error(
-                `${name}: Not enough wood to build ${action.building}! (Need ${cost}, have ${wood})`,
-                { duration: 3000 }
-              );
-              // Skip this action
-              updateCommanderActionIndex(id, currentActionIndex + 1);
-              return;
-            }
-
-            // Deduct wood
-            if (cost > 0) {
-              const success = deductWood(cost);
-              if (!success) {
-                // This shouldn't happen if the check above worked, but handle it anyway
-                toast.error(`${name}: Failed to deduct wood!`);
-                updateCommanderActionIndex(id, currentActionIndex + 1);
-                return;
-              }
-            }
-
-            // Place the building
-            const placed = placeBuilding({
-              position: action.position,
-              type: action.building,
-              ownerId: id,
-            });
-
-            if (placed) {
-              toast.success(
-                `${name}: Built ${action.building} at (${x}, ${y})${cost > 0 ? ` (-${cost} wood)` : ''}`,
-                { duration: 2000 }
-              );
-            } else {
-              toast.error(`${name}: Failed to build ${action.building}!`);
-            }
-
-            // Move to next action
-            updateCommanderActionIndex(id, currentActionIndex + 1);
+    commanders.forEach((commander) => {
+      commander.secretBuilds.forEach((building) => {
+        const cost = BUILDING_COSTS[building.type];
+        
+        // Check if we can afford it
+        if (wood - totalWoodUsed >= cost) {
+          // Place the building (it's marked as revealed: false)
+          const placed = placeBuilding(building);
+          
+          if (placed) {
+            totalWoodUsed += cost;
+            totalBuildings++;
           }
         }
       });
+    });
 
-      // If all commanders are done, move to debrief phase
-      if (allComplete) {
-        window.clearInterval(intervalId);
-        toast.success('All commanders have finished executing their plans!');
-        setTimeout(() => {
-          setPhase('debrief');
-        }, 1000);
-      }
-    };
+    // Deduct all the wood at once
+    if (totalWoodUsed > 0) {
+      deductWood(totalWoodUsed);
+    }
 
-    // Kick off execution loop
-    const intervalId = window.setInterval(executeNextActions, 2000);
-    executeNextActions();
+    toast.success(
+      `Execution started! ${totalBuildings} buildings planned (${totalWoodUsed} wood)`,
+      { duration: 3000 }
+    );
 
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [
-    phase,
-    commanders,
-    updateCommanderActionIndex,
-    placeBuilding,
-    deductWood,
-    isTileOccupied,
-    wood,
-    setPhase,
-  ]);
+    // Simulate wave duration (5 seconds for demo, would be 5 minutes in real game)
+    const waveDuration = 5000; // 5 seconds
+    
+    toast.loading('Enemy wave incoming...', { id: 'wave', duration: waveDuration });
+
+    setTimeout(() => {
+      toast.success('Wave complete! Revealing builds...', { id: 'wave' });
+      setPhase('debrief');
+      setExecutionStarted(false);
+    }, waveDuration);
+
+  }, [phase, executionStarted, commanders, placeBuilding, setPhase, wood, deductWood]);
+
+  // Reset execution started when phase changes away from execute
+  useEffect(() => {
+    if (phase !== 'execute') {
+      setExecutionStarted(false);
+    }
+  }, [phase]);
 
   return null;
 };
+

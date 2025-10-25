@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
-import { interpretCommandForAllCommanders, generateExecutionPlan } from '../services/llmService';
+import { interpretCommandForAllCommanders } from '../services/llmService';
+import { generateAllBuildPlans } from '../services/buildPlanService';
 import toast from 'react-hot-toast';
 
 export const CommandInput = () => {
@@ -9,11 +10,15 @@ export const CommandInput = () => {
   const phase = useGameStore((state) => state.phase);
   const setPhase = useGameStore((state) => state.setPhase);
   const commanders = useGameStore((state) => state.commanders);
+  const enabledBuildings = useGameStore((state) => state.enabledBuildings);
+  const wood = useGameStore((state) => state.wood);
+  const basePosition = useGameStore((state) => state.basePosition);
+  const buildings = useGameStore((state) => state.buildings);
   const updateCommanderInterpretation = useGameStore(
     (state) => state.updateCommanderInterpretation
   );
-  const updateCommanderExecutionPlan = useGameStore(
-    (state) => state.updateCommanderExecutionPlan
+  const updateCommanderSecretBuilds = useGameStore(
+    (state) => state.updateCommanderSecretBuilds
   );
   const apiKey = useGameStore((state) => state.apiKey);
 
@@ -24,6 +29,11 @@ export const CommandInput = () => {
     
     if (!command.trim()) {
       toast.error('Please enter a command');
+      return;
+    }
+
+    if (enabledBuildings.length === 0) {
+      toast.error('No buildings enabled! This should not happen.');
       return;
     }
 
@@ -39,23 +49,35 @@ export const CommandInput = () => {
         apiKey
       );
 
-      // Update each commander's interpretation and generate execution plans
+      // Update each commander's interpretation
       interpretations.forEach((interpretation, commanderId) => {
         updateCommanderInterpretation(commanderId, interpretation);
-
-        // Find the commander to get their personality
-        const commander = commanders.find((c) => c.id === commanderId);
-        if (commander) {
-          // Generate execution plan based on interpretation and personality
-          const executionPlan = generateExecutionPlan(interpretation, commander.personality);
-          updateCommanderExecutionPlan(commanderId, executionPlan);
-        }
       });
 
       toast.success('Commanders have interpreted the command!', { id: 'interpreting' });
+      
+      // Generate secret build plans for all commanders
+      toast.loading('Commanders are planning their builds...', { id: 'planning' });
+      
+      const buildPlans = generateAllBuildPlans(
+        commanders,
+        enabledBuildings,
+        wood,
+        basePosition,
+        buildings
+      );
+
+      // Update each commander's secret builds
+      buildPlans.forEach((plan, commanderId) => {
+        updateCommanderSecretBuilds(commanderId, plan);
+      });
+
+      toast.success('Build plans ready! Starting execution...', { id: 'planning' });
 
       // Move to execute phase
-      setPhase('execute');
+      setTimeout(() => {
+        setPhase('execute');
+      }, 1000);
       
     } catch (error) {
       console.error('Failed to process command:', error);
@@ -68,13 +90,24 @@ export const CommandInput = () => {
           commander.personality === 'paranoid' ? 'Possible deception detected.' :
           'This sounds wonderful!';
         updateCommanderInterpretation(commander.id, fallback);
-
-        // Generate execution plan from fallback
-        const executionPlan = generateExecutionPlan(fallback, commander.personality);
-        updateCommanderExecutionPlan(commander.id, executionPlan);
       });
 
-      setPhase('execute');
+      // Generate build plans even with fallback
+      const buildPlans = generateAllBuildPlans(
+        commanders,
+        enabledBuildings,
+        wood,
+        basePosition,
+        buildings
+      );
+
+      buildPlans.forEach((plan, commanderId) => {
+        updateCommanderSecretBuilds(commanderId, plan);
+      });
+
+      setTimeout(() => {
+        setPhase('execute');
+      }, 1000);
     } finally {
       setIsProcessing(false);
     }
@@ -88,7 +121,7 @@ export const CommandInput = () => {
             type="text"
             value={command}
             onChange={(e) => setCommand(e.target.value)}
-            placeholder="Enter a command for your commanders... (e.g., 'Build more defenses')"
+            placeholder="Enter a command for your commanders... (e.g., 'Defend the north')"
             className="flex-1 bg-gray-800 text-white border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-blue-500"
             disabled={isProcessing}
           />
@@ -101,7 +134,7 @@ export const CommandInput = () => {
           </button>
         </div>
         <p className="text-gray-500 text-xs mt-2">
-          Teaching Phase: Your commanders will interpret this command based on their personalities.
+          Teaching Phase: Your commanders will secretly plan their builds based on your command.
         </p>
       </form>
     </div>
