@@ -45,6 +45,7 @@ export const GameCanvas = () => {
     const buildingGraphicsMap = buildingGraphicsRef.current;
     const textureCache = buildingTextureCacheRef.current;
     const tileTextureCache = tileTextureCacheRef.current;
+    let canvasElement: HTMLCanvasElement | null = null;
 
     // Initialize PixiJS Application
     (async () => {
@@ -100,6 +101,24 @@ export const GameCanvas = () => {
         return texture;
       };
 
+      const getBuildingTexture = (type: Building['type']) => {
+        if (textureCache.has(type)) {
+          return textureCache.get(type)!;
+        }
+
+        const { fill, stroke } = getStyleForType(type);
+        const graphic = new Graphics();
+        graphic
+          .rect(0, 0, TILE_SIZE, TILE_SIZE)
+          .fill({ color: fill })
+          .stroke({ width: 1, color: stroke });
+
+        const texture = app!.renderer.generateTexture(graphic);
+        textureCache.set(type, texture);
+        graphic.destroy();
+        return texture;
+      };
+
       const grassTexture = getTileTexture('grass');
       for (let y = 0; y < GRID_SIZE; y++) {
         for (let x = 0; x < GRID_SIZE; x++) {
@@ -121,6 +140,13 @@ export const GameCanvas = () => {
       base.eventMode = 'none';
       base.label = 'Base';
       camera.addChild(base);
+
+      // Pre-generate all building textures
+      const buildingTypes: Building['type'][] = ['wall', 'tower', 'welcome-sign'];
+      buildingTypes.forEach(type => {
+        getBuildingTexture(type);
+        console.log(`[Init] Pre-generated texture for ${type}`);
+      });
 
       sortCameraChildren(camera);
 
@@ -208,30 +234,16 @@ export const GameCanvas = () => {
           }
 
           if (!graphicsMap.has(key)) {
-            const { fill, stroke } = getStyleForType(building.type);
-
-            // Create texture if not cached
+            // Use pre-cached texture
             const textureCache = buildingTextureCacheRef.current;
-            let texture = textureCache.get(building.type);
-            if (!texture && app) {
-              const graphic = new Graphics();
-              graphic
-                .rect(0, 0, TILE_SIZE, TILE_SIZE)
-                .fill({ color: fill })
-                .stroke({ width: 1, color: stroke });
-
-              texture = app.renderer.generateTexture(graphic);
-              textureCache.set(building.type, texture);
-              console.log(`[RenderBuildings] Created new texture for ${building.type}`);
-              graphic.destroy();
-            } else if (texture) {
-              console.log(`[RenderBuildings] Using cached texture for ${building.type}`);
-            }
+            const texture = textureCache.get(building.type);
 
             if (!texture) {
-              console.error(`[renderBuildings] Failed to create texture for ${building.type}`);
+              console.error(`[RenderBuildings] No pre-cached texture for ${building.type}`);
               return;
             }
+
+            console.log(`[RenderBuildings] Using pre-cached texture for ${building.type}`);
 
             // Create sprite from texture and position it
             const buildingSprite = new Sprite(texture);
@@ -274,10 +286,10 @@ export const GameCanvas = () => {
       };
 
       renderBuildingsRef.current = renderBuildings;
-
-      // Don't render buildings here - let the effect handle it
-      // This prevents double initialization
-      buildingsRef.current = [];
+      // Run an initial sync now that Pixi is ready
+      const currentBuildings = useGameStore.getState().buildings;
+      buildingsRef.current = [...currentBuildings];
+      renderBuildings();
 
       // Center camera on the grid
       defaultCameraX = app.screen.width / 2 - (GRID_SIZE * TILE_SIZE) / 2;
@@ -298,14 +310,15 @@ export const GameCanvas = () => {
           camera.scale.set(scale);
         }
       };
-      app.canvas.addEventListener('wheel', handleWheel);
+      canvasElement = app.canvas;
+      canvasElement.addEventListener('wheel', handleWheel);
 
       // Mouse drag to pan
       const handleMouseDown = (e: MouseEvent) => {
         isDragging = true;
         dragStart = { x: e.clientX - cameraPosition.x, y: e.clientY - cameraPosition.y };
       };
-      app.canvas.addEventListener('mousedown', handleMouseDown);
+      canvasElement.addEventListener('mousedown', handleMouseDown);
 
       const handleMouseMove = (e: MouseEvent) => {
         if (isDragging && camera) {
@@ -315,17 +328,17 @@ export const GameCanvas = () => {
           camera.y = cameraPosition.y;
         }
       };
-      app.canvas.addEventListener('mousemove', handleMouseMove);
+      canvasElement.addEventListener('mousemove', handleMouseMove);
 
       const handleMouseUp = () => {
         isDragging = false;
       };
-      app.canvas.addEventListener('mouseup', handleMouseUp);
+      canvasElement.addEventListener('mouseup', handleMouseUp);
 
       const handleMouseLeave = () => {
         isDragging = false;
       };
-      app.canvas.addEventListener('mouseleave', handleMouseLeave);
+      canvasElement.addEventListener('mouseleave', handleMouseLeave);
     })();
 
     // Reset zoom function - exposed to store
@@ -355,6 +368,14 @@ export const GameCanvas = () => {
       cameraRef.current = null;
       appRef.current = null;
 
+      if (canvasElement) {
+        canvasElement.removeEventListener('wheel', handleWheel);
+        canvasElement.removeEventListener('mousedown', handleMouseDown);
+        canvasElement.removeEventListener('mousemove', handleMouseMove);
+        canvasElement.removeEventListener('mouseup', handleMouseUp);
+        canvasElement.removeEventListener('mouseleave', handleMouseLeave);
+      }
+
       // Clear any pending queue items
       buildingQueueRef.current = [];
 
@@ -364,6 +385,8 @@ export const GameCanvas = () => {
       buildingGraphicsMap.clear();
       textureCache.forEach((texture) => texture.destroy(true));
       textureCache.clear();
+      tileTextureCache.forEach((texture) => texture.destroy(true));
+      tileTextureCache.clear();
 
       if (app && isInitialized) {
         try {
