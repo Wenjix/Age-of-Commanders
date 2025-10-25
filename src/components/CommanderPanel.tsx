@@ -1,44 +1,35 @@
-import { useGameStore, type Commander, type Personality } from '../store/useGameStore';
-
-const getPersonalityColor = (personality: Personality): string => {
-  switch (personality) {
-    case 'literalist':
-      return 'border-gray-400';
-    case 'paranoid':
-      return 'border-red-500';
-    case 'optimist':
-      return 'border-green-500';
-  }
-};
-
-const getAvatarColor = (personality: Personality): string => {
-  switch (personality) {
-    case 'literalist':
-      return 'bg-gray-500';
-    case 'paranoid':
-      return 'bg-red-500';
-    case 'optimist':
-      return 'bg-green-500';
-  }
-};
+import { useGameStore, type Commander } from '../store/useGameStore';
 
 const CommanderAvatar = ({ commander }: { commander: Commander }) => {
-  const borderColor = getPersonalityColor(commander.personality);
-  const avatarColor = getAvatarColor(commander.personality);
+  // Use conditional rendering instead of dynamic class names for Tailwind
+  const avatarColorClass = 
+    commander.personality === 'literalist' ? 'bg-gray-500' :
+    commander.personality === 'paranoid' ? 'bg-red-500' :
+    'bg-green-500';
+
+  const borderColorClass = 
+    commander.personality === 'literalist' ? 'border-gray-400' :
+    commander.personality === 'paranoid' ? 'border-red-500' :
+    'border-green-500';
+
+  const tailColorClass = 
+    commander.personality === 'literalist' ? 'border-r-gray-400' :
+    commander.personality === 'paranoid' ? 'border-r-red-500' :
+    'border-r-green-500';
 
   return (
-    <div className="flex items-start gap-3 p-4 bg-gray-900 rounded-lg">
+    <div className="flex items-start gap-3 flex-1">
       {/* Avatar */}
-      <div className={`w-10 h-10 rounded-full ${avatarColor} flex items-center justify-center text-white font-bold text-lg flex-shrink-0`}>
+      <div className={`w-10 h-10 rounded-full ${avatarColorClass} flex items-center justify-center text-white font-bold text-lg flex-shrink-0`}>
         {commander.name[0]}
       </div>
 
       {/* Speech Bubble */}
       <div className="flex-1">
         <div className="text-white text-sm font-semibold mb-1">{commander.name}</div>
-        <div className={`bg-gray-800 border-2 ${borderColor} rounded-lg px-3 py-2 relative`}>
+        <div className={`bg-gray-800 border-2 ${borderColorClass} rounded-lg px-3 py-2 relative`}>
           {/* Speech bubble tail */}
-          <div className={`absolute -left-2 top-3 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 ${borderColor.replace('border-', 'border-r-')}`}></div>
+          <div className={`absolute -left-2 top-3 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 ${tailColorClass}`}></div>
           <p className="text-white text-sm">{commander.interpretation}</p>
         </div>
       </div>

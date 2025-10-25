@@ -15,6 +15,11 @@ export const GameCanvas = () => {
 
     let app: Application | null = null;
     let isInitialized = false;
+    let camera: Container | null = null;
+    let scale = 1;
+    let cameraPosition = { x: 0, y: 0 };
+    let defaultCameraX = 0;
+    let defaultCameraY = 0;
 
     // Initialize PixiJS Application
     (async () => {
@@ -37,14 +42,12 @@ export const GameCanvas = () => {
       app.stage.addChild(world);
 
       // Create camera container
-      const camera = new Container();
+      camera = new Container();
       world.addChild(camera);
 
       // Camera state
-      let scale = 1;
       let isDragging = false;
       let dragStart = { x: 0, y: 0 };
-      let cameraPosition = { x: 0, y: 0 };
 
       // Draw grid of grass tiles
       for (let y = 0; y < GRID_SIZE; y++) {
@@ -69,27 +72,16 @@ export const GameCanvas = () => {
       camera.addChild(base);
 
       // Center camera on the grid
-      const defaultCameraX = app.screen.width / 2 - (GRID_SIZE * TILE_SIZE) / 2;
-      const defaultCameraY = app.screen.height / 2 - (GRID_SIZE * TILE_SIZE) / 2;
+      defaultCameraX = app.screen.width / 2 - (GRID_SIZE * TILE_SIZE) / 2;
+      defaultCameraY = app.screen.height / 2 - (GRID_SIZE * TILE_SIZE) / 2;
       camera.x = defaultCameraX;
       camera.y = defaultCameraY;
       cameraPosition = { x: camera.x, y: camera.y };
 
-      // Reset zoom function
-      const resetZoom = () => {
-        scale = 1;
-        camera.scale.set(scale);
-        camera.x = defaultCameraX;
-        camera.y = defaultCameraY;
-        cameraPosition = { x: camera.x, y: camera.y };
-      };
-
-      // Expose reset function to store
-      setResetZoom(resetZoom);
-
       // Mouse wheel zoom
       const handleWheel = (e: WheelEvent) => {
         e.preventDefault();
+        if (!camera) return;
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
         const newScale = Math.max(0.5, Math.min(2, scale * delta));
         
@@ -108,7 +100,7 @@ export const GameCanvas = () => {
       app.canvas.addEventListener('mousedown', handleMouseDown);
 
       const handleMouseMove = (e: MouseEvent) => {
-        if (isDragging) {
+        if (isDragging && camera) {
           cameraPosition.x = e.clientX - dragStart.x;
           cameraPosition.y = e.clientY - dragStart.y;
           camera.x = cameraPosition.x;
@@ -127,6 +119,20 @@ export const GameCanvas = () => {
       };
       app.canvas.addEventListener('mouseleave', handleMouseLeave);
     })();
+
+    // Reset zoom function - exposed to store
+    const resetZoom = () => {
+      if (camera) {
+        scale = 1;
+        camera.scale.set(scale);
+        camera.x = defaultCameraX;
+        camera.y = defaultCameraY;
+        cameraPosition = { x: camera.x, y: camera.y };
+      }
+    };
+
+    // Expose reset function to store immediately
+    setResetZoom(resetZoom);
 
     // Cleanup on unmount
     return () => {
