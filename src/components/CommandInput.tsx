@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
-import { interpretCommandForAllCommanders } from '../services/llmService';
+import { interpretCommandForAllCommanders, getLoadingMessage } from '../services/llmService';
 import { generateAllBuildPlans } from '../services/buildPlanService';
 import toast from 'react-hot-toast';
 
@@ -40,6 +40,15 @@ export const CommandInput = () => {
     setIsProcessing(true);
     
     try {
+      // Show personality-based loading messages
+      commanders.forEach((commander) => {
+        const message = getLoadingMessage(commander.personality);
+        toast.loading(`${commander.name} is ${message}...`, { 
+          id: `loading-${commander.id}`,
+          duration: 3000 
+        });
+      });
+      
       toast.loading('Commanders are interpreting your command...', { id: 'interpreting' });
       
       // Get interpretations for all commanders
@@ -114,29 +123,52 @@ export const CommandInput = () => {
   };
 
   return (
-    <div className="bg-gray-900 border-t border-gray-700 p-4">
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            placeholder="Enter a command for your commanders... (e.g., 'Defend the north')"
-            className="flex-1 bg-gray-800 text-white border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-blue-500"
-            disabled={isProcessing}
-          />
-          <button
-            type="submit"
-            disabled={isProcessing}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold px-6 py-2 rounded transition-colors"
-          >
-            {isProcessing ? 'Processing...' : 'Send'}
-          </button>
+    <div className="bg-gray-950 border-t-2 border-green-600 p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Terminal Header */}
+        <div className="bg-gray-900 rounded-t-lg border-2 border-green-600 border-b-0 px-4 py-2 flex items-center gap-2">
+          <div className="flex gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+          </div>
+          <span className="text-green-400 text-sm font-mono ml-2">COMMAND CONSOLE</span>
         </div>
-        <p className="text-gray-500 text-xs mt-2">
-          Teaching Phase: Your commanders will secretly plan their builds based on your command.
-        </p>
-      </form>
+
+        {/* Terminal Body */}
+        <form onSubmit={handleSubmit}>
+          <div className="bg-black rounded-b-lg border-2 border-green-600 border-t-0 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-green-400 font-mono text-lg">{'>'}</span>
+              <input
+                type="text"
+                value={command}
+                onChange={(e) => setCommand(e.target.value)}
+                placeholder="Enter command... (e.g., 'Defend the north')"
+                className="flex-1 bg-transparent text-green-400 font-mono text-lg focus:outline-none placeholder-green-700 caret-green-400"
+                disabled={isProcessing}
+                autoFocus
+                style={{
+                  fontFamily: "'Courier New', monospace",
+                }}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-green-700 text-xs font-mono">
+                Teaching Phase: Commanders will interpret your command based on their personalities.
+              </p>
+              <button
+                type="submit"
+                disabled={isProcessing}
+                className="bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-gray-700 disabled:cursor-not-allowed text-black font-bold px-6 py-2 rounded font-mono transition-colors shadow-lg shadow-green-600/50 disabled:shadow-none"
+              >
+                {isProcessing ? 'PROCESSING...' : 'EXECUTE'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

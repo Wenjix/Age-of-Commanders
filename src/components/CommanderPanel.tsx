@@ -32,6 +32,12 @@ const CommanderAvatar = ({ commander }: { commander: Commander }) => {
 
 export const CommanderPanel = () => {
   const commanders = useGameStore((state) => state.commanders);
+  const phase = useGameStore((state) => state.phase);
+
+  // Hide during curate phase
+  if (phase === 'curate') {
+    return null;
+  }
 
   return (
     <div className="bg-gray-950 border-t border-gray-700 p-4">
