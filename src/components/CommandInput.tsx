@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
-import { interpretCommandForAllCommanders } from '../services/llmService';
+import { interpretCommandForAllCommanders, generateExecutionPlan } from '../services/llmService';
 import toast from 'react-hot-toast';
 
 export const CommandInput = () => {
@@ -11,6 +11,9 @@ export const CommandInput = () => {
   const commanders = useGameStore((state) => state.commanders);
   const updateCommanderInterpretation = useGameStore(
     (state) => state.updateCommanderInterpretation
+  );
+  const updateCommanderExecutionPlan = useGameStore(
+    (state) => state.updateCommanderExecutionPlan
   );
   const apiKey = useGameStore((state) => state.apiKey);
 
@@ -36,13 +39,21 @@ export const CommandInput = () => {
         apiKey
       );
 
-      // Update each commander's interpretation
+      // Update each commander's interpretation and generate execution plans
       interpretations.forEach((interpretation, commanderId) => {
         updateCommanderInterpretation(commanderId, interpretation);
+
+        // Find the commander to get their personality
+        const commander = commanders.find((c) => c.id === commanderId);
+        if (commander) {
+          // Generate execution plan based on interpretation and personality
+          const executionPlan = generateExecutionPlan(interpretation, commander.personality);
+          updateCommanderExecutionPlan(commanderId, executionPlan);
+        }
       });
 
       toast.success('Commanders have interpreted the command!', { id: 'interpreting' });
-      
+
       // Move to execute phase
       setPhase('execute');
       
@@ -52,13 +63,17 @@ export const CommandInput = () => {
       
       // Use fallback responses
       commanders.forEach((commander) => {
-        const fallback = 
+        const fallback =
           commander.personality === 'literalist' ? 'Processing command literally.' :
           commander.personality === 'paranoid' ? 'Possible deception detected.' :
           'This sounds wonderful!';
         updateCommanderInterpretation(commander.id, fallback);
+
+        // Generate execution plan from fallback
+        const executionPlan = generateExecutionPlan(fallback, commander.personality);
+        updateCommanderExecutionPlan(commander.id, executionPlan);
       });
-      
+
       setPhase('execute');
     } finally {
       setIsProcessing(false);
