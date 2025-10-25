@@ -259,7 +259,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   
   phase: 'curate',
   setPhase: (phase) => set({ phase }),
-  apiKey: null,
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
   setApiKey: (key) => set({ apiKey: key }),
   concurrencyLimit: 3,
   setConcurrencyLimit: (limit) => set({ concurrencyLimit: limit }),
