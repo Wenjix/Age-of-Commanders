@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 export type Personality = 'literalist' | 'paranoid' | 'optimist';
+export type GamePhase = 'draft' | 'teach' | 'execute' | 'debrief';
 
 export interface Commander {
   id: string;
@@ -15,6 +16,11 @@ interface GameState {
   resetZoom: (() => void) | null;
   setResetZoom: (fn: (() => void) | null) => void;
   commanders: Commander[];
+  updateCommanderInterpretation: (id: string, interpretation: string) => void;
+  phase: GamePhase;
+  setPhase: (phase: GamePhase) => void;
+  apiKey: string | null;
+  setApiKey: (key: string) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -42,5 +48,15 @@ export const useGameStore = create<GameState>((set) => ({
       interpretation: "Let's make friends!",
     },
   ],
+  updateCommanderInterpretation: (id, interpretation) =>
+    set((state) => ({
+      commanders: state.commanders.map((c) =>
+        c.id === id ? { ...c, interpretation } : c
+      ),
+    })),
+  phase: 'teach',
+  setPhase: (phase) => set({ phase }),
+  apiKey: null,
+  setApiKey: (key) => set({ apiKey: key }),
 }));
 
