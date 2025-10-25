@@ -7,6 +7,7 @@ import { CommandInput } from './components/CommandInput';
 import { ExecutionController } from './components/ExecutionController';
 import { BuildingCuration } from './components/BuildingCuration';
 import { ApiKeyModal } from './components/ApiKeyModal';
+import { DebriefScreen } from './components/DebriefScreen';
 import { useGameStore } from './store/useGameStore';
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
         onClose={() => setShowApiKeyModal(false)}
       />
       <BuildingCuration />
+      <DebriefScreen />
       <ExecutionController />
       <TopBar />
       <div className="flex-1 overflow-hidden">

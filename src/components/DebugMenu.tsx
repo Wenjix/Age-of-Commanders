@@ -71,6 +71,7 @@ export const DebugMenu = () => {
       position: [buildingX, buildingY] as [number, number],
       type: buildingType,
       ownerId: buildingOwner,
+      revealed: true, // Debug buildings are always revealed
     };
 
     const success = debugMode ? placeDebugBuilding(building) : placeBuilding(building);

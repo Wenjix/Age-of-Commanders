@@ -46,6 +46,43 @@ export const GameCanvas = () => {
     const textureCache = buildingTextureCacheRef.current;
     const tileTextureCache = tileTextureCacheRef.current;
     let canvasElement: HTMLCanvasElement | null = null;
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+
+    // Event handlers (defined at useEffect scope so cleanup can access them)
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (!camera) return;
+      const delta = e.deltaY > 0 ? CAMERA_SETTINGS.ZOOM_FACTOR.OUT : CAMERA_SETTINGS.ZOOM_FACTOR.IN;
+      const newScale = Math.max(CAMERA_SETTINGS.MIN_ZOOM, Math.min(CAMERA_SETTINGS.MAX_ZOOM, scale * delta));
+      
+      if (newScale !== scale) {
+        scale = newScale;
+        camera.scale.set(scale);
+      }
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      dragStart = { x: e.clientX - cameraPosition.x, y: e.clientY - cameraPosition.y };
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging && camera) {
+        cameraPosition.x = e.clientX - dragStart.x;
+        cameraPosition.y = e.clientY - dragStart.y;
+        camera.x = cameraPosition.x;
+        camera.y = cameraPosition.y;
+      }
+    };
+
+    const handleMouseUp = () => {
+      isDragging = false;
+    };
+
+    const handleMouseLeave = () => {
+      isDragging = false;
+    };
 
     // Initialize PixiJS Application
     (async () => {
@@ -73,10 +110,6 @@ export const GameCanvas = () => {
       camera.sortableChildren = true;
       world.addChild(camera);
       cameraRef.current = camera;
-
-      // Camera state
-      let isDragging = false;
-      let dragStart = { x: 0, y: 0 };
 
       const getTileTexture = (type: 'grass' | 'base') => {
         if (tileTextureCache.has(type)) {
@@ -142,7 +175,7 @@ export const GameCanvas = () => {
       camera.addChild(base);
 
       // Pre-generate all building textures
-      const buildingTypes: Building['type'][] = ['wall', 'tower', 'welcome-sign'];
+      const buildingTypes: Building['type'][] = ['wall', 'tower', 'decoy', 'mine', 'farm'];
       buildingTypes.forEach(type => {
         getBuildingTexture(type);
         console.log(`[Init] Pre-generated texture for ${type}`);
@@ -216,6 +249,11 @@ export const GameCanvas = () => {
         let queuedRemoves = 0;
 
         buildingsRef.current.forEach((building) => {
+          // Skip unrevealed buildings during blind execution
+          if (!building.revealed) {
+            return;
+          }
+
           const [x, y] = building.position;
           const key = getBuildingKey(x, y);
           activeKeys.add(key);
@@ -298,46 +336,12 @@ export const GameCanvas = () => {
       camera.y = defaultCameraY;
       cameraPosition = { x: camera.x, y: camera.y };
 
-      // Mouse wheel zoom
-      const handleWheel = (e: WheelEvent) => {
-        e.preventDefault();
-        if (!camera) return;
-        const delta = e.deltaY > 0 ? CAMERA_SETTINGS.ZOOM_FACTOR.OUT : CAMERA_SETTINGS.ZOOM_FACTOR.IN;
-        const newScale = Math.max(CAMERA_SETTINGS.MIN_ZOOM, Math.min(CAMERA_SETTINGS.MAX_ZOOM, scale * delta));
-        
-        if (newScale !== scale) {
-          scale = newScale;
-          camera.scale.set(scale);
-        }
-      };
+      // Attach event listeners
       canvasElement = app.canvas;
       canvasElement.addEventListener('wheel', handleWheel);
-
-      // Mouse drag to pan
-      const handleMouseDown = (e: MouseEvent) => {
-        isDragging = true;
-        dragStart = { x: e.clientX - cameraPosition.x, y: e.clientY - cameraPosition.y };
-      };
       canvasElement.addEventListener('mousedown', handleMouseDown);
-
-      const handleMouseMove = (e: MouseEvent) => {
-        if (isDragging && camera) {
-          cameraPosition.x = e.clientX - dragStart.x;
-          cameraPosition.y = e.clientY - dragStart.y;
-          camera.x = cameraPosition.x;
-          camera.y = cameraPosition.y;
-        }
-      };
       canvasElement.addEventListener('mousemove', handleMouseMove);
-
-      const handleMouseUp = () => {
-        isDragging = false;
-      };
       canvasElement.addEventListener('mouseup', handleMouseUp);
-
-      const handleMouseLeave = () => {
-        isDragging = false;
-      };
       canvasElement.addEventListener('mouseleave', handleMouseLeave);
     })();
 

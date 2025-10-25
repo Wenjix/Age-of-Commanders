@@ -234,7 +234,7 @@ export function generateExecutionPlan(
         // Build welcome sign
         plan.push({
           type: 'build',
-          building: 'welcome-sign',
+          building: 'farm',
           position: [10, 5],
         });
       }
@@ -252,7 +252,7 @@ export function generateExecutionPlan(
         for (let i = 0; i < Math.min(decorativePositions.length, 3); i++) {
           plan.push({
             type: 'build',
-            building: 'welcome-sign',
+            building: 'farm',
             position: decorativePositions[i],
           });
         }
@@ -262,7 +262,7 @@ export function generateExecutionPlan(
       if (plan.length === 0) {
         plan.push({
           type: 'build',
-          building: 'welcome-sign',
+          building: 'farm',
           position: [10, 5],
         });
       }
