@@ -1,5 +1,5 @@
 import { useGameStore } from '../store/useGameStore';
-import { processEnemyTurn } from './enemyService';
+import { processEnemyTurn, spawnEnemiesForTurn } from './enemyService';
 import { processCombatPhase } from './combatService';
 import type { Building } from '../store/useGameStore';
 import { BUILDING_COSTS } from '../constants/gameConstants';
@@ -15,6 +15,19 @@ export interface TurnResult {
 // Process one turn of the game
 export async function processTurn(): Promise<TurnResult> {
   const state = useGameStore.getState();
+
+  // CRITICAL: Check if we're in intermission - if so, bail out
+  if (state.isIntermission) {
+    console.log('[processTurn] In intermission, skipping turn processing');
+    return {
+      enemiesKilled: 0,
+      buildingsPlaced: 0,
+      baseDamaged: false,
+      gameOver: false,
+      victory: false,
+    };
+  }
+
   const result: TurnResult = {
     enemiesKilled: 0,
     buildingsPlaced: 0,
@@ -35,14 +48,26 @@ export async function processTurn(): Promise<TurnResult> {
     impact: 'low',
   });
 
+  // CRITICAL: Spawn enemies for this turn (replaces spawnInitialWave)
+  spawnEnemiesForTurn(currentTurn, state.currentAct);
+
   // Phase 1: Enemy Movement
   const enemyResult = await processEnemyTurn();
   result.baseDamaged = enemyResult.baseDamaged;
+
+  // Track mine kills
+  if (enemyResult.enemiesKilledByMines > 0) {
+    state.recordEnemyKills(state.currentAct, enemyResult.enemiesKilledByMines);
+  }
+
+  // Check base proximity for Act 2 bonus
+  state.checkBaseProximity();
 
   // Check for defeat
   if (state.baseHealth <= 0) {
     result.gameOver = true;
     result.victory = false;
+    stopAutoAdvance(); // CRITICAL: Stop auto-advance on defeat
     return result;
   }
 
@@ -53,36 +78,53 @@ export async function processTurn(): Promise<TurnResult> {
   const combatResult = await processCombatPhase();
   result.enemiesKilled = combatResult.enemiesKilled;
 
-  // Check victory condition
-  const remainingEnemies = useGameStore.getState().enemies.length;
-  if (remainingEnemies === 0 && currentTurn >= 3) {
-    // Victory if all enemies defeated after wave spawned
-    state.addTurnLogEntry({
-      turn: currentTurn,
-      type: 'victory',
-      description: 'All enemies defeated! Tactical Victory!',
-      impact: 'high',
-      emoji: '🎉',
-    });
-    result.gameOver = true;
-    result.victory = true;
-    state.setPhase('debrief');
+  // CRITICAL: Track enemy kills with count
+  if (result.enemiesKilled > 0) {
+    state.recordEnemyKills(state.currentAct, result.enemiesKilled);
   }
 
-  // Check if we've reached max turns
-  if (currentTurn >= state.maxTurns) {
-    if (remainingEnemies > 0) {
+  // REMOVED: Early victory condition (all enemies defeated)
+  // Game always runs to turn 24 or defeat
+
+  // Check for intermission after turn 8 or 16
+  if (currentTurn === 8 || currentTurn === 16) {
+    const bonus = currentTurn === 8
+      ? state.calculateAct1Bonus()
+      : state.calculateAct2Bonus();
+
+    if (bonus > 0) {
+      state.addWood(bonus);
       state.addTurnLogEntry({
         turn: currentTurn,
-        type: 'victory',
-        description: `Survived ${state.maxTurns} turns! Strategic Victory!`,
+        type: 'building_placed', // Reuse existing type
+        description: `Act ${state.currentAct} bonus: +${bonus} wood! Total: ${state.wood + bonus} wood`,
         impact: 'high',
-        emoji: '🏆',
+        emoji: '🎁',
       });
     }
+
+    state.setIsIntermission(true);
+    stopAutoAdvance(); // CRITICAL: Stop auto-advance when entering intermission
+
+    return result; // Pause execution
+  }
+
+  // Check if we've reached max turns (turn 24)
+  if (currentTurn >= state.maxTurns) {
     result.gameOver = true;
     result.victory = state.baseHealth > 0;
     state.setPhase('debrief');
+    stopAutoAdvance(); // CRITICAL: Stop auto-advance
+
+    state.addTurnLogEntry({
+      turn: currentTurn,
+      type: 'victory',
+      description: result.victory
+        ? `Survived all 24 turns! Strategic Victory!`
+        : `Defeat on turn ${currentTurn}`,
+      impact: 'high',
+      emoji: result.victory ? '🏆' : '💀',
+    });
   }
 
   return result;
@@ -122,6 +164,10 @@ async function processCommanderBuilds(turn: number): Promise<number> {
 
         if (success) {
           state.deductWood(cost);
+
+          // CRITICAL: Track wood spent
+          state.recordWoodSpent(state.currentAct, cost);
+
           buildingsPlaced++;
 
           // Log the successful build
@@ -275,10 +321,11 @@ export function startAutoAdvance() {
   turnInterval = setInterval(async () => {
     const currentState = useGameStore.getState();
 
+    // CRITICAL: Check intermission flag
     if (
       currentState.phase !== 'execute' ||
       currentState.isPaused ||
-      currentState.currentTurn >= currentState.maxTurns
+      currentState.isIntermission  // NEW: Stop if in intermission
     ) {
       stopAutoAdvance();
       return;
@@ -304,8 +351,28 @@ export async function skipToEnd() {
   const state = useGameStore.getState();
   state.pauseGame();
 
-  while (state.currentTurn < state.maxTurns) {
+  while (state.currentTurn < state.maxTurns && !state.isIntermission) {  // NEW: Stop at intermission
     const result = await processTurn();
-    if (result.gameOver) break;
+    if (result.gameOver || state.isIntermission) break;  // NEW: Break on intermission
   }
+}
+
+// NEW: Resume from intermission (called by IntermissionPanel)
+export function resumeFromIntermission(): void {
+  const state = useGameStore.getState();
+
+  // Advance to next act
+  const nextAct = state.currentTurn === 8 ? 2 : 3;
+  state.switchToAct(nextAct as 1 | 2 | 3);  // This copies act builds to secretBuilds and resets Act 2 flag
+
+  // Clear intermission flag
+  state.setIsIntermission(false);
+
+  // CRITICAL: Restart auto-advance
+  startAutoAdvance();
+
+  // CRITICAL: Process the next turn immediately to keep momentum
+  setTimeout(() => {
+    processTurn();
+  }, 500);
 }

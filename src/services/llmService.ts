@@ -138,7 +138,7 @@ export async function interpretCommandForAllCommanders(
   apiKey: string | null
 ): Promise<Map<string, string>> {
   const results = new Map<string, string>();
-  
+
   // Create all promises
   const promises = commanders.map(async (commander) => {
     const interpretation = await getCommanderInterpretation(
@@ -153,6 +153,90 @@ export async function interpretCommandForAllCommanders(
   await Promise.all(promises);
 
   return results;
+}
+
+/**
+ * NEW: Context-aware interpretation for intermissions
+ * Includes previous command and game state in the prompt
+ */
+export async function interpretCommandWithContext(
+  newCommand: string,
+  lastCommand: string | undefined,
+  personality: Personality,
+  gameState: { wood: number; enemiesKilled: number; act: number },
+  apiKey: string | null
+): Promise<string> {
+  // Check cache first (include context in cache key)
+  const cacheKey = `${CACHE_PREFIX}${personality}_act${gameState.act}_${newCommand}_${lastCommand || 'none'}`;
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) return cached;
+
+  if (!apiKey) {
+    return FALLBACK_RESPONSES[personality];
+  }
+
+  const contextPrompt = `
+Previous command: ${lastCommand || 'None'}
+New command: ${newCommand}
+Current state: Act ${gameState.act}, ${gameState.wood} wood, ${gameState.enemiesKilled} enemies defeated
+
+${PERSONALITY_PROMPTS[personality]}
+
+Interpret the NEW command considering your personality and the current state.`;
+
+  return currentLimit(async () => {
+    try {
+      const interpretation = await callGeminiAPI(apiKey, contextPrompt, newCommand);
+      localStorage.setItem(cacheKey, interpretation);
+      return interpretation;
+    } catch (error) {
+      console.error(`Failed to get interpretation for ${personality}:`, error);
+      return FALLBACK_RESPONSES[personality];
+    }
+  });
+}
+
+/**
+ * NEW: Generate personality-based builds when player skips
+ */
+export function interpretSkipAsCommand(
+  personality: Personality,
+  lastCommand: string | undefined,
+  gameState: { wood: number }
+): Action[] {
+  switch (personality) {
+    case 'literalist':
+      // Repeat last build if possible, else do nothing
+      return lastCommand ? generateExecutionPlan(lastCommand, personality).slice(0, 1) : [];
+
+    case 'paranoid':
+      // Build defensive structures near base
+      return [
+        { type: 'build', building: 'wall', position: [11, 11] },
+        { type: 'build', building: 'mine', position: [13, 11] },
+      ];
+
+    case 'optimist':
+      // Spend on "fun" builds
+      return [
+        { type: 'build', building: 'decoy', position: [10, 8] },
+        { type: 'build', building: 'farm', position: [14, 8] },
+      ];
+  }
+}
+
+/**
+ * NEW: Get personality-specific thought for skipping
+ */
+export function getSkipThought(personality: Personality): string {
+  switch (personality) {
+    case 'literalist':
+      return 'No new instructions. Continue original plan.';
+    case 'paranoid':
+      return "They've gone silent… it's a trap. Assume worst-case.";
+    case 'optimist':
+      return "They trust us to handle it! Let's get creative!";
+  }
 }
 
 /**
@@ -279,5 +363,5 @@ export function generateExecutionPlan(
       break;
   }
 
-  return plan;
+  return plan.slice(0, 3); // CHANGED: Max 3 builds per act
 }

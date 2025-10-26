@@ -14,17 +14,24 @@ const ENEMY_LABELS = [
   'Friendly Foe',
 ];
 
+// NEW: Act spawn schedules for 3-act system
+const ACT_SPAWN_SCHEDULES = {
+  1: { turns: [1, 3, 5, 7], distribution: [2, 2, 1, 1] },      // 6 total
+  2: { turns: [9, 11, 13, 15], distribution: [3, 3, 3, 3] },   // 12 total
+  3: { turns: [17, 18, 19, 20, 21, 22, 23], distribution: [3, 3, 2, 3, 2, 3, 2] }, // 18 total
+};
+
 export interface EnemyTurnResult {
   baseDamaged: boolean;
   enemiesMoved: number;
+  enemiesKilledByMines: number; // NEW: Track mine kills separately
 }
 
 // Spawn a wave of enemies at the top of the map
-export function spawnEnemyWave(waveSize: number = 10) {
+export function spawnEnemyWave(waveSize: number) { // CHANGED: waveSize now required, no default
   const state = useGameStore.getState();
 
-  // Clear any existing enemies
-  state.enemies.forEach(enemy => state.removeEnemy(enemy.id));
+  // REMOVED: "Clear any existing enemies" logic - we want accumulation across acts
 
   for (let i = 0; i < waveSize; i++) {
     // Random x position between 5-20
@@ -54,12 +61,24 @@ export function spawnEnemyWave(waveSize: number = 10) {
   }
 }
 
+// NEW: Spawn enemies for a specific turn based on act schedule
+export function spawnEnemiesForTurn(turn: number, act: 1 | 2 | 3): void {
+  const schedule = ACT_SPAWN_SCHEDULES[act];
+  const turnIndex = schedule.turns.indexOf(turn);
+
+  if (turnIndex !== -1) {
+    const waveSize = schedule.distribution[turnIndex];
+    spawnEnemyWave(waveSize);
+  }
+}
+
 // Process enemy movement for one turn
 export async function processEnemyTurn(): Promise<EnemyTurnResult> {
   const state = useGameStore.getState();
   const result: EnemyTurnResult = {
     baseDamaged: false,
     enemiesMoved: 0,
+    enemiesKilledByMines: 0, // NEW: Track mine kills
   };
 
   // Copy enemies array to avoid mutation during iteration
@@ -98,6 +117,7 @@ export async function processEnemyTurn(): Promise<EnemyTurnResult> {
         // Both mine and enemy are destroyed
         state.removeBuilding(mine.position[0], mine.position[1]);
         state.removeEnemy(enemy.id);
+        result.enemiesKilledByMines++; // NEW: Increment mine kill counter
 
         state.addTurnLogEntry({
           turn: state.currentTurn,
@@ -241,14 +261,4 @@ function getMineAtPosition(position: [number, number]): Building | null {
   ) || null;
 }
 
-// Spawn initial wave (called when execution starts)
-export function spawnInitialWave() {
-  const state = useGameStore.getState();
-
-  // Spawn enemies on turn 1
-  if (state.currentTurn === 0) {
-    setTimeout(() => {
-      spawnEnemyWave(5); // Start with 5 enemies
-    }, 1000);
-  }
-}
+// REMOVED: spawnInitialWave() - replaced by spawnEnemiesForTurn() in turn loop

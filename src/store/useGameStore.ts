@@ -42,8 +42,20 @@ export interface Commander {
   interpretation: string;
   colors: CommanderColors;
   executionPlan: Action[];
-  secretBuilds: Building[]; // Hidden until reveal
-  currentActionIndex: number;
+  secretBuilds: Building[]; // Hidden until reveal - KEEP for backward compatibility
+  currentActionIndex: number; // KEEP for backward compatibility
+
+  // NEW: Act-specific build queues
+  act1Builds: Building[];
+  act2Builds: Building[];
+  act3Builds: Building[];
+
+  // NEW: Track action index per act
+  act1ActionIndex: number;
+  act2ActionIndex: number;
+  act3ActionIndex: number;
+
+  lastCommand?: string; // Track previous command for context
 }
 
 interface GameState {
@@ -108,6 +120,30 @@ interface GameState {
   clearCommanderThoughts: () => void;
   damageBase: () => void;
 
+  // NEW: 3-Act system state
+  currentAct: 1 | 2 | 3;
+  isIntermission: boolean;
+
+  // NEW: Bonus tracking
+  act1Bonus: number;
+  act2Bonus: number;
+  act2BaseNeverThreatened: boolean;
+
+  // NEW: Statistics per act (indices 0=Act1, 1=Act2, 2=Act3)
+  enemiesKilledPerAct: [number, number, number];
+  woodSpentPerAct: [number, number, number];
+
+  // NEW: 3-Act system actions
+  setCurrentAct: (act: 1 | 2 | 3) => void;
+  setIsIntermission: (value: boolean) => void;
+  recordEnemyKills: (act: number, count: number) => void;
+  recordWoodSpent: (act: number, amount: number) => void;
+  checkBaseProximity: () => void;
+  calculateAct1Bonus: () => number;
+  calculateAct2Bonus: () => number;
+  resetAct2BonusFlag: () => void;
+  switchToAct: (act: 1 | 2 | 3) => void;
+
   resetGame: () => void;
 }
 
@@ -121,6 +157,12 @@ const initialCommanders: Commander[] = [
     executionPlan: [],
     secretBuilds: [],
     currentActionIndex: 0,
+    act1Builds: [],
+    act2Builds: [],
+    act3Builds: [],
+    act1ActionIndex: 0,
+    act2ActionIndex: 0,
+    act3ActionIndex: 0,
   },
   {
     id: 'paul',
@@ -131,6 +173,12 @@ const initialCommanders: Commander[] = [
     executionPlan: [],
     secretBuilds: [],
     currentActionIndex: 0,
+    act1Builds: [],
+    act2Builds: [],
+    act3Builds: [],
+    act1ActionIndex: 0,
+    act2ActionIndex: 0,
+    act3ActionIndex: 0,
   },
   {
     id: 'olivia',
@@ -141,11 +189,17 @@ const initialCommanders: Commander[] = [
     executionPlan: [],
     secretBuilds: [],
     currentActionIndex: 0,
+    act1Builds: [],
+    act2Builds: [],
+    act3Builds: [],
+    act1ActionIndex: 0,
+    act2ActionIndex: 0,
+    act3ActionIndex: 0,
   },
 ];
 
 export const useGameStore = create<GameState>((set, get) => ({
-  wood: 50,
+  wood: 40, // CHANGED: Start with 40 wood for 3-act system
   basePosition: { x: 12, y: 12 },
   baseHealth: 3,
   buildings: [],
@@ -158,11 +212,20 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // Turn system initial state
   currentTurn: 0,
-  maxTurns: 10,
+  maxTurns: 24, // CHANGED: 24 turns for 3-act system
   isPaused: false,
   turnSpeed: 2000,
   turnLog: [],
   commanderThoughts: [],
+
+  // NEW: 3-Act system initial state
+  currentAct: 1,
+  isIntermission: false,
+  act1Bonus: 0,
+  act2Bonus: 0,
+  act2BaseNeverThreatened: true,
+  enemiesKilledPerAct: [0, 0, 0],
+  woodSpentPerAct: [0, 0, 0],
   
   updateCommanderInterpretation: (id, interpretation) =>
     set((state) => ({
@@ -395,14 +458,114 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
+  // NEW: 3-Act system actions
+  setCurrentAct: (act) => set({ currentAct: act }),
+
+  setIsIntermission: (value) => set({ isIntermission: value }),
+
+  recordEnemyKills: (act, count) => {
+    set((state) => {
+      const newKills = [...state.enemiesKilledPerAct];
+      newKills[act - 1] += count; // act is 1-indexed, array is 0-indexed
+      return { enemiesKilledPerAct: newKills as [number, number, number] };
+    });
+  },
+
+  recordWoodSpent: (act, amount) => {
+    set((state) => {
+      const newSpent = [...state.woodSpentPerAct];
+      newSpent[act - 1] += amount;
+      return { woodSpentPerAct: newSpent as [number, number, number] };
+    });
+  },
+
+  checkBaseProximity: () => {
+    const state = get();
+    if (state.currentAct !== 2) return; // Only check during Act 2
+
+    // CRITICAL: Derive from basePosition instead of hard-coding
+    const { basePosition } = state;
+    const baseAdjacentPositions: [number, number][] = [];
+
+    // Generate 12 surrounding tiles around 2x2 base
+    for (let x = basePosition.x - 1; x <= basePosition.x + 2; x++) {
+      for (let y = basePosition.y - 1; y <= basePosition.y + 2; y++) {
+        // Skip the 4 tiles that ARE the base
+        if (x >= basePosition.x && x < basePosition.x + 2 &&
+            y >= basePosition.y && y < basePosition.y + 2) {
+          continue;
+        }
+        baseAdjacentPositions.push([x, y]);
+      }
+    }
+
+    const enemyThreatening = state.enemies.some(enemy =>
+      baseAdjacentPositions.some(([x, y]) =>
+        enemy.position[0] === x && enemy.position[1] === y
+      )
+    );
+
+    if (enemyThreatening) {
+      set({ act2BaseNeverThreatened: false });
+    }
+  },
+
+  calculateAct1Bonus: () => {
+    const state = get();
+    const killed = state.enemiesKilledPerAct[0];
+    const bonus = killed >= 2 ? 10 : 0;
+    set({ act1Bonus: bonus });
+    return bonus;
+  },
+
+  calculateAct2Bonus: () => {
+    const state = get();
+    const bonus = state.act2BaseNeverThreatened ? 15 : 0;
+    set({ act2Bonus: bonus });
+    return bonus;
+  },
+
+  resetAct2BonusFlag: () => {
+    set({ act2BaseNeverThreatened: true });
+  },
+
+  switchToAct: (act) => {
+    set((state) => ({
+      currentAct: act,
+      commanders: state.commanders.map(c => {
+        const builds = act === 1 ? c.act1Builds : act === 2 ? c.act2Builds : c.act3Builds;
+        const actionIndex = act === 1 ? c.act1ActionIndex : act === 2 ? c.act2ActionIndex : c.act3ActionIndex;
+
+        return {
+          ...c,
+          secretBuilds: builds,  // Copy to secretBuilds for compatibility
+          currentActionIndex: actionIndex,
+        };
+      }),
+    }));
+
+    // Reset Act 2 bonus flag when Act 2 begins
+    if (act === 2) {
+      set({ act2BaseNeverThreatened: true });
+    }
+  },
+
   resetGame: () => {
     set({
-      wood: 50,
+      wood: 40, // CHANGED: 3-act system starts with 40
       baseHealth: 3,
       buildings: [],
       enemies: [],
       enabledBuildings: [],
-      commanders: initialCommanders,
+      commanders: initialCommanders.map(c => ({
+        ...c,
+        act1Builds: [],
+        act2Builds: [],
+        act3Builds: [],
+        act1ActionIndex: 0,
+        act2ActionIndex: 0,
+        act3ActionIndex: 0,
+      })),
       phase: 'draft',
       debriefPanelWidth: 0,
       revealingBuildings: false,
@@ -410,6 +573,14 @@ export const useGameStore = create<GameState>((set, get) => ({
       isPaused: false,
       turnLog: [],
       commanderThoughts: [],
+      // NEW: Reset 3-act system state
+      currentAct: 1,
+      isIntermission: false,
+      act1Bonus: 0,
+      act2Bonus: 0,
+      act2BaseNeverThreatened: true,
+      enemiesKilledPerAct: [0, 0, 0],
+      woodSpentPerAct: [0, 0, 0],
     });
   },
 }));
