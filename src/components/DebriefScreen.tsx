@@ -130,7 +130,17 @@ export const DebriefScreen = () => {
   // Extract highlight data
   const quoteOfTheDay = highlights.find(h => h.category === 'Quote of the Day');
   const mostAbsurdHighlight = highlights.find(h => h.category === 'Most Absurd');
-  const bestMomentData = extractBestMoment(turnLog);
+  
+  // Find best reaction (most interesting commander reaction)
+  const bestReaction = buildingsByCommander
+    .map(({ commander, buildings: commanderBuildings }) => ({
+      commander: commander.name,
+      reaction: cleanTextForDisplay(generateReaction(commander, stats)),
+    }))
+    .reduce((best, current) => {
+      // Prefer longer, more interesting reactions
+      return current.reaction.length > best.reaction.length ? current : best;
+    }, { commander: '', reaction: '' });
 
   // Prepare highlight badges data
   const highlightBadgesData = {
@@ -144,9 +154,9 @@ export const DebriefScreen = () => {
       count: 5, // Could be extracted from description
       absurdity: 95, // Could be calculated
     } : undefined,
-    bestMoment: bestMomentData ? {
-      turn: bestMomentData.turn,
-      description: bestMomentData.description,
+    bestReaction: bestReaction.reaction ? {
+      commander: bestReaction.commander,
+      text: bestReaction.reaction,
     } : undefined,
   };
 

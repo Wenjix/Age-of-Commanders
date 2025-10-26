@@ -55,6 +55,7 @@ export const CommanderCard = ({
 
   const emoji = PERSONALITY_EMOJIS[commander.personality] || '🤖';
   const personalityLabel = commander.personality.charAt(0).toUpperCase() + commander.personality.slice(1);
+  const hasPortrait = commander.avatarImage && commander.avatarImage !== '';
 
   return (
     <div
@@ -63,7 +64,22 @@ export const CommanderCard = ({
     >
       {/* Header */}
       <div className="commander-header">
-        <div className="commander-avatar">{emoji}</div>
+        <div className="commander-avatar">
+          {hasPortrait ? (
+            <img 
+              src={commander.avatarImage} 
+              alt={commander.name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+              onError={(e) => {
+                // Fallback to emoji if image fails to load
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement!.textContent = emoji;
+              }}
+            />
+          ) : (
+            emoji
+          )}
+        </div>
         <div className="commander-info">
           <h3 className="commander-name">{commander.name}</h3>
           <span className="personality-badge">{personalityLabel}</span>

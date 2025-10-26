@@ -39,7 +39,7 @@ interface HighlightBadgesProps {
   highlights: {
     quoteOfTheDay?: { text: string; commander: string };
     mostAbsurd?: { commander: string; type: string; count: number; absurdity: number };
-    bestMoment?: { turn: number; description: string };
+    bestReaction?: { commander: string; text: string };
   };
 }
 
@@ -68,13 +68,13 @@ export const HighlightBadges = ({ highlights }: HighlightBadgesProps) => {
     });
   }
 
-  // Best Moment
-  if (highlights.bestMoment) {
+  // Best Reaction
+  if (highlights.bestReaction) {
     badges.push({
-      icon: '🎯',
-      title: 'BEST MOMENT',
-      content: highlights.bestMoment.description,
-      subtitle: `Turn ${highlights.bestMoment.turn}`,
+      icon: '💬',
+      title: 'BEST REACTION',
+      content: `"${highlights.bestReaction.text}"`,
+      author: highlights.bestReaction.commander,
       color: 'blue',
     });
   }
