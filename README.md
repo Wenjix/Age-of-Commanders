@@ -1,43 +1,45 @@
 # Age of Commanders
 
-A React + PixiJS 8 game built with Vite and TypeScript.
+> A comedic AI-powered strategy game where you teach three commanders with distinct personalities—and watch them hilariously misinterpret everything.
+
+Built for **AI Games Hackathon 2025** with React, PixiJS, and Google Gemini.
+
+## The Concept
+
+Give commands to three AI commanders, each with a wildly different personality:
+- **Larry (Literalist)**: Interprets instructions word-for-word, never assumes intent
+- **Paul (Paranoid)**: Believes everything is a trap, over-prepares for threats
+- **Olivia (Optimist)**: Sees friendship everywhere, enemies are just misunderstood
+
+Watch them build defenses, fight enemies, and create shareable comedic moments through LLM-powered interpretations.
 
 ## Features
 
-- **20x20 Grid**: Rendered with green grass tiles (32x32px each)
-- **Base Building**: Red 32x32px square at center position [10,10]
-- **Resource Display**: Top bar showing "Wood: 50"
-- **Camera Controls**:
-  - **Drag to Pan**: Click and drag to move the camera
-  - **Mouse Wheel to Zoom**: Scroll to zoom in/out (min 0.5x, max 2x)
-- **State Management**: Zustand for global state (wood count, base position)
-- **Styling**: Tailwind CSS for UI components
+- **26x26 Grid**: PixiJS-rendered battlefield with camera pan/zoom
+- **3-Act Gameplay**: Progressive difficulty with intermissions and bonus rewards
+- **AI Commanders**: Gemini 2.5 Flash Lite powers unique personality interpretations
+- **Turn-Based Combat**: 30-turn execution with enemy waves
+- **Building System**: Walls and towers with blind-build reveal mechanics
+- **Debrief Screen**: Post-game highlights, battle timeline, and shareable quotes
 
 ## Tech Stack
 
-- **React 19** - UI framework
-- **PixiJS 8** - WebGL rendering engine
-- **Vite** - Build tool and dev server
-- **TypeScript** - Type-safe development
-- **Zustand** - State management
-- **Tailwind CSS** - Utility-first CSS framework
-
-## Project Structure
-
-```
-/src
-  /store
-    useGameStore.ts    # Zustand store for game state
-  /components
-    GameCanvas.tsx     # PixiJS canvas component
-    TopBar.tsx         # Resource display bar
-  App.tsx              # Main app component
-  main.tsx             # Entry point
-```
+- **React 19** + **TypeScript** - UI framework with strict type safety
+- **PixiJS 8** - WebGL rendering for the game grid
+- **Zustand 5** - Lightweight state management
+- **Gemini 2.5 Flash Lite** - LLM for commander personalities
+- **Vite 7** - Build tool and dev server
+- **Tailwind CSS 4** - Styling
 
 ## Getting Started
 
-### Install Dependencies
+### Prerequisites
+
+- Node.js (v18+)
+- pnpm package manager
+- Gemini API key (get one at [Google AI Studio](https://aistudio.google.com/apikey))
+
+### Installation
 
 ```bash
 pnpm install
@@ -49,33 +51,47 @@ pnpm install
 pnpm dev
 ```
 
-### Build for Production
+The app will prompt for your Gemini API key on first launch (stored in-memory only).
+
+### Build
 
 ```bash
 pnpm build
 ```
 
-### Preview Production Build
+### Lint
 
 ```bash
-pnpm preview
+pnpm lint
 ```
 
-## Game State
+## Project Structure
 
-The game uses Zustand to manage:
-- `wood`: Resource count (initial value: 50)
-- `basePosition`: Base building coordinates (x: 10, y: 10)
+```
+/src
+  /components     # React UI components
+  /services       # LLM integration, combat logic, turn management
+  /store          # Zustand global state
+  /utils          # Comedy detection, formatting, game logic
+  /constants      # Game configuration
+```
 
-## Controls
+## Game Controls
 
-- **Pan Camera**: Click and drag anywhere on the canvas
-- **Zoom**: Use mouse wheel to zoom in/out (0.5x - 2x range)
+- **Pan Camera**: Click and drag
+- **Zoom**: Mouse wheel (0.5x - 2x)
+- **Commander Panel**: View AI interpretations and status
 
-## Next Steps
+## Environment Variables
 
-- Add more building types
-- Implement resource gathering
-- Add enemy units
-- Create unit selection and commands
+Create a `.env` file:
 
+```env
+VITE_GEMINI_API_KEY=your_api_key_here
+```
+
+Or enter it via the in-app modal (more secure—not persisted).
+
+## License
+
+Built for AI Games Hackathon 2025.
