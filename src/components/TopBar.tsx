@@ -21,7 +21,7 @@ export const TopBar = () => {
       style={{ paddingLeft: `${debriefPanelWidth + 16}px` }}
     >
       <div className="flex items-center gap-4">
-        <span className="font-semibold">Wood: {wood}</span>
+        <span className="font-semibold">🪵 Wood: {wood}</span>
         {phase === 'execute' && (
           <div className="flex items-center gap-2">
             <span className="text-amber-400 font-bold">Act {currentAct}/3</span>
