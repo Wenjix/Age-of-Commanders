@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import {
   Pause,
@@ -6,9 +6,12 @@ import {
   SkipBack,
   SkipForward,
   FastForward,
-  Heart
+  Heart,
+  GripVertical
 } from 'lucide-react';
 import { processTurn, skipToEnd, startAutoAdvance, stopAutoAdvance } from '../services/turnManager';
+
+const STORAGE_KEY = 'execution_hud_position';
 
 export const ExecutionHUD: React.FC = () => {
   const phase = useGameStore((state) => state.phase);
@@ -20,6 +23,23 @@ export const ExecutionHUD: React.FC = () => {
   const pauseGame = useGameStore((state) => state.pauseGame);
   const resumeGame = useGameStore((state) => state.resumeGame);
   const isIntermission = useGameStore((state) => state.isIntermission);
+
+  // Drag state
+  const hudRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ x: number; y: number }>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // Fallback to default
+      }
+    }
+    // Default: centered horizontally, 80px from top
+    return { x: window.innerWidth / 2 - 300, y: 80 }; // ~300px = approximate half HUD width
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // Keyboard controls
   useEffect(() => {
@@ -62,6 +82,54 @@ export const ExecutionHUD: React.FC = () => {
     };
   }, [phase, currentTurn, isPaused]);
 
+  // Drag handlers
+  const handleDragStart = (e: React.MouseEvent) => {
+    const rect = hudRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+    setIsDragging(true);
+  };
+
+  // Handle dragging
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = hudRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      let newX = e.clientX - dragOffset.x;
+      let newY = e.clientY - dragOffset.y;
+
+      // Clamp to viewport bounds
+      const maxX = window.innerWidth - rect.width;
+      const maxY = window.innerHeight - rect.height;
+
+      newX = Math.max(0, Math.min(newX, maxX));
+      newY = Math.max(0, Math.min(newY, maxY));
+
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      // Save position to localStorage
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(position));
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset, position]);
+
   if (phase !== 'execute') return null;
 
   const getBaseEmoji = () => {
@@ -94,8 +162,27 @@ export const ExecutionHUD: React.FC = () => {
   };
 
   return (
-    <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40">
+    <div
+      ref={hudRef}
+      className="fixed z-40"
+      style={{
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        opacity: isDragging ? 0.9 : 1,
+        transition: isDragging ? 'none' : 'opacity 200ms',
+        userSelect: isDragging ? 'none' : 'auto',
+      }}
+    >
       <div className="bg-gray-900/95 backdrop-blur-sm rounded-xl px-6 py-3 shadow-xl border border-gray-700">
+        {/* Drag Handle */}
+        <div
+          onMouseDown={handleDragStart}
+          className="absolute -left-8 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing p-1 bg-gray-800/80 rounded-l-lg border border-r-0 border-gray-700 hover:bg-gray-700 transition-colors"
+          title="Drag to move"
+        >
+          <GripVertical className="w-4 h-4 text-gray-400" />
+        </div>
+
         {/* Turn Counter */}
         <div className="flex items-center gap-6">
           {/* Turn Display */}
