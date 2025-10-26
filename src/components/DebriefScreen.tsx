@@ -9,6 +9,7 @@ import {
   type GameStats,
 } from '../utils/comedyDetection';
 import toast from 'react-hot-toast';
+import { cleanTextForDisplay } from '../utils/textFormatting';
 
 const BUILDING_ICONS: Record<string, string> = {
   wall: '🧱',
@@ -334,7 +335,7 @@ export const DebriefScreen = () => {
               {/* Interpretation */}
               <div className={`${theme.secondaryButtonBackground} rounded p-2 mb-2`}>
                 <p className={`${theme.mutedText} text-xs mb-1`}>They heard:</p>
-                <p className={`${theme.bodyText} text-xs italic`}>"{commander.interpretation}"</p>
+                <p className={`${theme.bodyText} text-xs italic`}>"{cleanTextForDisplay(commander.interpretation)}"</p>
               </div>
 
               {/* Buildings */}
@@ -365,7 +366,7 @@ export const DebriefScreen = () => {
                 }}
               >
                 <p className={`${theme.mutedText} text-xs mb-1`}>Reaction:</p>
-                <p className={`${theme.bodyText} text-sm font-medium`}>💬 {reaction}</p>
+                <p className={`${theme.bodyText} text-sm font-medium`}>💬 {cleanTextForDisplay(reaction)}</p>
               </div>
 
               {/* Absurdity Meter */}
@@ -409,7 +410,7 @@ export const DebriefScreen = () => {
                     </span>
                   </div>
                   <p className={`${theme.mutedText} text-xs mb-1`}>{highlight.commanderName}</p>
-                  <p className={`${theme.bodyText} text-sm`}>{highlight.description}</p>
+                  <p className={`${theme.bodyText} text-sm`}>{cleanTextForDisplay(highlight.description)}</p>
                 </div>
               ))}
             </div>
@@ -425,7 +426,7 @@ export const DebriefScreen = () => {
               >
                 <div className="text-lg mb-2">✨ QUOTE OF THE DAY ✨</div>
                 <div className={`text-base italic ${theme.headingText} mb-1`}>
-                  "{highlights.find(h => h.category === 'Quote of the Day')?.description}"
+                  "{cleanTextForDisplay(highlights.find(h => h.category === 'Quote of the Day')?.description || '')}"
                 </div>
                 <div className={`text-xs ${theme.mutedText}`}>
                   - {highlights.find(h => h.category === 'Quote of the Day')?.commanderName}
