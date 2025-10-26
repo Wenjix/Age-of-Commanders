@@ -1,4 +1,3 @@
-import React from 'react';
 import type { BuildingType } from '../store/useGameStore';
 import { BUILDING_DIMENSIONS, BUILDING_STYLES } from '../constants/gameConstants';
 
@@ -24,8 +23,8 @@ export const BuildingTilePreview = ({ type, size = 'medium' }: BuildingTilePrevi
   const fillColor = hexToCSS(colors.fill);
   const strokeColor = hexToCSS(colors.stroke);
 
-  // Generate tiles based on dimensions
-  const tiles: JSX.Element[] = [];
+  // Generate tiles based on dimensions (TypeScript infers the type)
+  const tiles = [];
   for (let y = 0; y < dimensions.height; y++) {
     for (let x = 0; x < dimensions.width; x++) {
       tiles.push(
