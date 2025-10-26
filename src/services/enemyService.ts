@@ -257,8 +257,8 @@ function getWallAtPosition(position: [number, number]): Building | null {
   return state.buildings.find(
     b => b.position[0] === position[0] &&
         b.position[1] === position[1] &&
-        b.type === 'wall' &&
-        b.revealed
+        b.type === 'wall'
+        // Note: revealed status doesn't affect blocking - walls always block
   ) || null;
 }
 
@@ -268,8 +268,8 @@ function getMineAtPosition(position: [number, number]): Building | null {
   return state.buildings.find(
     b => b.position[0] === position[0] &&
         b.position[1] === position[1] &&
-        b.type === 'mine' &&
-        b.revealed
+        b.type === 'mine'
+        // Note: revealed status doesn't affect function - mines always explode
   ) || null;
 }
 
@@ -279,8 +279,8 @@ function getTowerAtPosition(position: [number, number]): Building | null {
   return state.buildings.find(
     b => b.position[0] === position[0] &&
         b.position[1] === position[1] &&
-        b.type === 'tower' &&
-        b.revealed
+        b.type === 'tower'
+        // Note: revealed status doesn't affect function - towers always attack
   ) || null;
 }
 
