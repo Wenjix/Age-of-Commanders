@@ -1,6 +1,44 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Safelist for dark-blur theme - ensures classes are generated even when used dynamically */
+@source inline("
+  bg-gradient-to-br from-gray-900 to-gray-950 backdrop-blur-sm
+  bg-gray-800 bg-gray-800/50 bg-gray-700 bg-gray-600
+  border-2 border-gray-700 border-gray-600 border-blue-500
+  shadow-2xl shadow-black/50 shadow-lg shadow-black/30
+  text-white text-gray-200 text-gray-400
+  bg-blue-900/30 bg-blue-600 bg-blue-700 hover:bg-blue-700 hover:bg-gray-600
+  hover:shadow-lg hover:shadow-blue-500/30 hover:shadow-md
+");
+
+/* Safelist for frosted-glass theme */
+@source inline("
+  bg-black/40 backdrop-blur-xl
+  bg-white/10 bg-white/5 bg-white/20 hover:bg-white/20
+  border border-white/20 border-white/30 border-blue-400/80
+  shadow-blue-500/20 shadow-xl shadow-purple-500/20
+  text-gray-100 text-gray-300
+  bg-blue-500/20 bg-blue-500/80 bg-blue-600/90 hover:bg-blue-600/90
+  hover:shadow-xl hover:shadow-blue-400/40 hover:shadow-white/10
+");
+
+/* Common theme utilities */
+@source inline("
+  text-green-400 text-red-400 text-blue-400
+  hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed
+");
+
+/* Z-index utilities for always-on-top elements */
+@source inline("
+  z-[90] z-[100] z-[110]
+");
+
+/* Debrief panel widths and padding for split-view layout */
+@source inline("
+  w-[60px] w-[600px] pl-[60px] pl-[600px]
+  transition-all duration-300
+  left-0 top-0 top-[44px] h-full h-[calc(100vh-44px)]
+");
 
 body {
   margin: 0;

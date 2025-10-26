@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGameStore, type BuildingType } from '../store/useGameStore';
 import { BUILDING_COSTS, BUILDING_DESCRIPTIONS } from '../constants/gameConstants';
+import { getThemeStyles } from '../utils/themeStyles';
 import toast from 'react-hot-toast';
 
 const ALL_BUILDINGS: BuildingType[] = ['wall', 'tower', 'decoy', 'mine', 'farm'];
@@ -18,10 +19,13 @@ export const BuildingCuration = () => {
   const enabledBuildings = useGameStore((state) => state.enabledBuildings);
   const setEnabledBuildings = useGameStore((state) => state.setEnabledBuildings);
   const setPhase = useGameStore((state) => state.setPhase);
-  
+  const uiTheme = useGameStore((state) => state.uiTheme);
+
   const [selectedBuildings, setSelectedBuildings] = useState<BuildingType[]>(enabledBuildings);
 
   if (phase !== 'curate') return null;
+
+  const theme = getThemeStyles(uiTheme);
 
   const toggleBuilding = (building: BuildingType) => {
     if (selectedBuildings.includes(building)) {
@@ -47,16 +51,16 @@ export const BuildingCuration = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl p-8 max-w-3xl w-full">
+    <div className={`fixed inset-0 flex items-center justify-center z-50 p-4 ${theme.overlayBackground} ${theme.overlayBackdrop}`}>
+      <div className={`rounded-xl p-8 max-w-3xl w-full ${theme.cardBackground} ${theme.cardBorder} ${theme.cardShadow}`}>
         <div className="mb-6">
-          <h2 className="text-gray-900 text-3xl font-bold mb-3">
+          <h2 className={`text-3xl font-bold mb-3 ${theme.headingText}`}>
             🏗️ Choose Your Buildings
           </h2>
-          <p className="text-gray-700 text-lg leading-relaxed mb-2">
+          <p className={`text-lg leading-relaxed mb-2 ${theme.bodyText}`}>
             Select <strong>exactly 3 building types</strong> for your commanders to use.
           </p>
-          <p className="text-gray-600 text-sm">
+          <p className={`text-sm ${theme.mutedText}`}>
             Your commanders will interpret your commands and build using only these types.
           </p>
         </div>
@@ -73,27 +77,27 @@ export const BuildingCuration = () => {
                 key={building}
                 onClick={() => toggleBuilding(building)}
                 className={`
-                  p-4 rounded-lg border-2 transition-all text-left
+                  p-4 rounded-lg transition-all text-left
                   ${
                     isSelected
-                      ? 'border-blue-500 bg-blue-50 shadow-md'
-                      : 'border-gray-300 bg-white hover:border-gray-400'
+                      ? `${theme.buildingCardSelectedBorder} ${theme.buildingCardSelectedBackground} shadow-md`
+                      : `${theme.buildingCardBorder} ${theme.buildingCardBackground} hover:opacity-80`
                   }
                 `}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{icon}</span>
-                    <span className="text-gray-900 font-bold capitalize">
+                    <span className={`font-bold capitalize ${theme.headingText}`}>
                       {building}
                     </span>
                   </div>
                   {isSelected && (
-                    <span className="text-blue-600 font-bold">✓</span>
+                    <span className="text-blue-400 font-bold">✓</span>
                   )}
                 </div>
-                <p className="text-gray-600 text-sm mb-2">{description}</p>
-                <p className="text-gray-800 text-sm font-semibold">
+                <p className={`text-sm mb-2 ${theme.mutedText}`}>{description}</p>
+                <p className={`text-sm font-semibold ${theme.bodyText}`}>
                   Cost: {cost} wood
                 </p>
               </button>
@@ -102,16 +106,16 @@ export const BuildingCuration = () => {
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="text-gray-700">
+          <div className={theme.bodyText}>
             <span className="font-semibold">Selected:</span>{' '}
-            <span className={selectedBuildings.length === 3 ? 'text-green-600' : 'text-red-600'}>
+            <span className={selectedBuildings.length === 3 ? 'text-green-400' : 'text-red-400'}>
               {selectedBuildings.length}/3
             </span>
           </div>
           <button
             onClick={handleConfirm}
             disabled={selectedBuildings.length !== 3}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-md hover:shadow-lg"
+            className={`text-white font-bold py-3 px-8 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${theme.primaryButtonBackground} ${theme.primaryButtonHover}`}
           >
             Confirm Selection
           </button>

@@ -1,6 +1,7 @@
 import { useGameStore, type GamePhase } from '../store/useGameStore';
 
 const PHASES: { id: GamePhase; label: string; icon: string }[] = [
+  { id: 'draft', label: 'Draft', icon: '👥' },
   { id: 'curate', label: 'Curate', icon: '🏗️' },
   { id: 'teach', label: 'Teach', icon: '📝' },
   { id: 'execute', label: 'Execute', icon: '⚔️' },

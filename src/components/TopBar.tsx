@@ -4,6 +4,7 @@ import { DebugMenu } from './DebugMenu';
 export const TopBar = () => {
   const wood = useGameStore((state) => state.wood);
   const resetZoom = useGameStore((state) => state.resetZoom);
+  const debriefPanelWidth = useGameStore((state) => state.debriefPanelWidth);
 
   const handleResetZoom = () => {
     if (resetZoom) {
@@ -12,7 +13,10 @@ export const TopBar = () => {
   };
 
   return (
-    <div className="bg-gray-800 text-white px-4 py-2 flex items-center justify-between">
+    <div
+      className="bg-gray-800 text-white px-4 py-2 flex items-center justify-between z-[100] relative transition-all duration-300"
+      style={{ paddingLeft: `${debriefPanelWidth + 16}px` }}
+    >
       <span className="font-semibold">Wood: {wood}</span>
       <div className="flex items-center gap-2">
         <button

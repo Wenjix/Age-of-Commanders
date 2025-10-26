@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 
 export type Personality = 'literalist' | 'paranoid' | 'optimist';
-export type GamePhase = 'curate' | 'teach' | 'execute' | 'debrief';
+export type GamePhase = 'draft' | 'curate' | 'teach' | 'execute' | 'debrief';
+export type UITheme = 'dark-blur' | 'frosted-glass';
 
 export interface CommanderColors {
   bg: string;
@@ -70,10 +71,14 @@ interface GameState {
   removeEnemy: (id: string) => void;
   phase: GamePhase;
   setPhase: (phase: GamePhase) => void;
+  uiTheme: UITheme;
+  setUiTheme: (theme: UITheme) => void;
   apiKey: string | null;
   setApiKey: (key: string) => void;
   concurrencyLimit: number;
   setConcurrencyLimit: (limit: number) => void;
+  debriefPanelWidth: number; // 0 = hidden, 60 = collapsed tab, 600 = expanded panel
+  setDebriefPanelWidth: (width: number) => void;
   resetGame: () => void;
 }
 
@@ -256,14 +261,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       enemies: state.enemies.filter((e) => e.id !== id),
     }));
   },
-  
-  phase: 'curate',
+
+  phase: 'draft',
   setPhase: (phase) => set({ phase }),
+  uiTheme: 'frosted-glass',
+  setUiTheme: (theme) => set({ uiTheme: theme }),
   apiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
   setApiKey: (key) => set({ apiKey: key }),
   concurrencyLimit: 3,
   setConcurrencyLimit: (limit) => set({ concurrencyLimit: limit }),
-  
+  debriefPanelWidth: 0,
+  setDebriefPanelWidth: (width) => set({ debriefPanelWidth: width }),
+
   resetGame: () => {
     set({
       wood: 50,
@@ -271,7 +280,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       enemies: [],
       enabledBuildings: [],
       commanders: initialCommanders,
-      phase: 'curate',
+      phase: 'draft',
+      debriefPanelWidth: 0,
     });
   },
 }));

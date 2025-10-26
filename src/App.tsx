@@ -8,6 +8,7 @@ import { ExecutionController } from './components/ExecutionController';
 import { ExecutionScreen } from './components/ExecutionScreen';
 import { BuildingCuration } from './components/BuildingCuration';
 import { DebriefScreen } from './components/DebriefScreen';
+import { CommanderIntroduction } from './components/CommanderIntroduction';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           },
         }}
       />
+      <CommanderIntroduction />
       <BuildingCuration />
       <DebriefScreen />
       <ExecutionScreen />

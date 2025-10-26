@@ -21,6 +21,7 @@ export const GameCanvas = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const basePosition = useGameStore((state) => state.basePosition);
   const buildings = useGameStore((state) => state.buildings);
+  const debriefPanelWidth = useGameStore((state) => state.debriefPanelWidth);
   const setResetZoom = useGameStore((state) => state.setResetZoom);
   const appRef = useRef<Application | null>(null);
   const cameraRef = useRef<Container | null>(null);
@@ -419,5 +420,11 @@ export const GameCanvas = () => {
     renderBuildingsRef.current();
   }, [buildings]);
 
-  return <div ref={canvasRef} className="w-full h-full" />;
+  return (
+    <div
+      ref={canvasRef}
+      className="w-full h-full transition-all duration-300"
+      style={{ paddingLeft: `${debriefPanelWidth}px` }}
+    />
+  );
 };

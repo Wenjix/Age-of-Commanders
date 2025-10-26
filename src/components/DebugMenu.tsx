@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { updateConcurrencyLimit } from '../services/llmService';
-import type { BuildingType } from '../store/useGameStore';
+import type { BuildingType, UITheme } from '../store/useGameStore';
 import toast from 'react-hot-toast';
 
 export const DebugMenu = () => {
@@ -13,6 +13,8 @@ export const DebugMenu = () => {
   const setApiKey = useGameStore((state) => state.setApiKey);
   const concurrencyLimit = useGameStore((state) => state.concurrencyLimit);
   const setConcurrencyLimit = useGameStore((state) => state.setConcurrencyLimit);
+  const uiTheme = useGameStore((state) => state.uiTheme);
+  const setUiTheme = useGameStore((state) => state.setUiTheme);
   const commanders = useGameStore((state) => state.commanders);
   const updateCommanderName = useGameStore((state) => state.updateCommanderName);
   const updateCommanderColor = useGameStore((state) => state.updateCommanderColor);
@@ -113,7 +115,7 @@ export const DebugMenu = () => {
 
       {isOpen && (
         <div
-          className="absolute mt-2 rounded-lg shadow-xl p-4 z-50"
+          className="absolute mt-2 rounded-lg shadow-xl p-4 z-[110]"
           style={{
             backgroundColor: '#ffffff',
             width: '400px',
@@ -240,6 +242,44 @@ export const DebugMenu = () => {
                 </p>
               </div>
             ))}
+          </div>
+
+          {/* UI Theme Section */}
+          <div className="mb-4 pb-4" style={{ borderBottom: '1px solid #e5e7eb' }}>
+            <h4 className="font-semibold mb-3 text-sm" style={{ color: '#1a1a1a' }}>
+              🎨 Visual Theme
+            </h4>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="uiTheme"
+                  value="frosted-glass"
+                  checked={uiTheme === 'frosted-glass'}
+                  onChange={(e) => setUiTheme(e.target.value as UITheme)}
+                  className="rounded"
+                />
+                <span className="text-sm" style={{ color: '#1a1a1a' }}>
+                  Frosted Glass (Default)
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="uiTheme"
+                  value="dark-blur"
+                  checked={uiTheme === 'dark-blur'}
+                  onChange={(e) => setUiTheme(e.target.value as UITheme)}
+                  className="rounded"
+                />
+                <span className="text-sm" style={{ color: '#1a1a1a' }}>
+                  Dark Blur
+                </span>
+              </label>
+            </div>
+            <p className="text-xs mt-2" style={{ color: '#6b7280' }}>
+              Changes apply immediately to Draft and Curate screens
+            </p>
           </div>
 
           {/* Building Placement Section */}
