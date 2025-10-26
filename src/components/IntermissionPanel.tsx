@@ -7,6 +7,7 @@ import {
   getSkipThought,
   generateExecutionPlan
 } from '../services/llmService';
+import { getScoutingReport } from '../constants/scoutingReports';
 import toast from 'react-hot-toast';
 
 export const IntermissionPanel = () => {
@@ -25,8 +26,11 @@ export const IntermissionPanel = () => {
 
   // Determine which act just completed and which is next
   const completedAct = currentTurn === 8 ? 1 : 2;
-  const nextAct = currentTurn === 8 ? 2 : 3;
+  const nextAct = (currentTurn === 8 ? 2 : 3) as 1 | 2 | 3;
   const bonus = currentTurn === 8 ? act1Bonus : act2Bonus;
+  
+  // Get scouting report for next act
+  const scoutingReport = getScoutingReport(nextAct);
 
   const handleSubmit = async () => {
     // Prevent empty submissions
@@ -165,6 +169,14 @@ export const IntermissionPanel = () => {
           <p className="text-sm text-slate-300 mt-2">
             Total Enemies Defeated: {enemiesKilledPerAct.reduce((a, b) => a + b, 0)}
           </p>
+        </div>
+
+        {/* Scouting Report for Next Act */}
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded">
+          <p className="font-bold text-gray-900 flex items-center gap-2">
+            {scoutingReport.emoji} SCOUTING REPORT (Act {nextAct}):
+          </p>
+          <p className="text-gray-800 mt-1">{scoutingReport.message}</p>
         </div>
 
         <div className="mb-6">

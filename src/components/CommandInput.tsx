@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { interpretCommandForAllCommanders, getLoadingMessage } from '../services/llmService';
 import { generateAllBuildPlans } from '../services/buildPlanService';
+import { getScoutingReport } from '../constants/scoutingReports';
 import toast from 'react-hot-toast';
 
 export const CommandInput = () => {
@@ -130,9 +131,19 @@ export const CommandInput = () => {
     }
   };
 
+  // Get scouting report for Act 1 (initial teach phase)
+  const scoutingReport = getScoutingReport(1);
+  
   return (
     <div className="bg-gray-950 border-t-2 border-green-600 p-6">
       <div className="max-w-4xl mx-auto">
+        {/* Scouting Report */}
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4 rounded">
+          <p className="font-bold text-gray-900 flex items-center gap-2">
+            {scoutingReport.emoji} SCOUTING REPORT (Act {scoutingReport.act}):
+          </p>
+          <p className="text-gray-800 mt-1">{scoutingReport.message}</p>
+        </div>
         {/* Terminal Header */}
         <div className="bg-gray-900 rounded-t-lg border-2 border-green-600 border-b-0 px-4 py-2 flex items-center gap-2">
           <div className="flex gap-1.5">
