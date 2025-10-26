@@ -43,7 +43,7 @@ export const BuildingCuration = () => {
   };
 
   return (
-    <div className={`fixed inset-0 flex items-start justify-center z-50 p-4 pt-16 ${theme.overlayBackground} ${theme.overlayBackdrop}`}>
+    <div className={`fixed inset-0 flex items-start justify-center z-50 p-4 pt-12 ${theme.overlayBackground} ${theme.overlayBackdrop}`}>
       <div className={`rounded-xl p-8 max-w-5xl w-full max-h-[calc(100vh-5rem)] overflow-y-auto ${theme.cardBackground} ${theme.cardBorder} ${theme.cardShadow}`}>
         <div className="mb-6">
           <h2 className={`text-3xl font-bold mb-3 ${theme.headingText}`}>

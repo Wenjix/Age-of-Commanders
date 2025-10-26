@@ -38,6 +38,7 @@ export const GameCanvas = () => {
   const enemiesRef = useRef<Enemy[]>([]);
   const enemyGraphicsRef = useRef<Map<string, Container>>(new Map());
   const thoughtBubblesRef = useRef<Map<string, Container>>(new Map());
+  const baseEmojiRef = useRef<Text | null>(null);
   const renderBuildingsRef = useRef<(() => void) | null>(null);
   const renderEnemiesRef = useRef<(() => void) | null>(null);
   const renderQueueRef = useRef<BuildingQueueItem[]>([]);
@@ -579,6 +580,7 @@ export const GameCanvas = () => {
         );
         emojiText.zIndex = Z_LAYERS.ENEMIES;
         emojiText.label = 'BaseEmoji';
+        baseEmojiRef.current = emojiText;
         camera.addChild(emojiText);
       };
 
@@ -608,21 +610,21 @@ export const GameCanvas = () => {
       canvasElement.addEventListener('mousemove', handleMouseMove);
       canvasElement.addEventListener('mouseup', handleMouseUp);
       canvasElement.addEventListener('mouseleave', handleMouseLeave);
+
+      // Reset zoom function - exposed to store
+      const resetZoom = () => {
+        if (camera) {
+          scale = 1;
+          camera.scale.set(scale);
+          camera.x = defaultCameraX;
+          camera.y = defaultCameraY;
+          cameraPosition = { x: camera.x, y: camera.y };
+        }
+      };
+
+      // Expose reset function to store
+      setResetZoom(resetZoom);
     })();
-
-    // Reset zoom function - exposed to store
-    const resetZoom = () => {
-      if (camera) {
-        scale = 1;
-        camera.scale.set(scale);
-        camera.x = defaultCameraX;
-        camera.y = defaultCameraY;
-        cameraPosition = { x: camera.x, y: camera.y };
-      }
-    };
-
-    // Expose reset function to store immediately
-    setResetZoom(resetZoom);
 
     // Cleanup on unmount
     return () => {
@@ -636,6 +638,7 @@ export const GameCanvas = () => {
 
       cameraRef.current = null;
       appRef.current = null;
+      baseEmojiRef.current = null;
 
       if (canvasElement) {
         canvasElement.removeEventListener('wheel', handleWheel);
@@ -696,20 +699,17 @@ export const GameCanvas = () => {
 
   // Handle base health changes - update emoji
   useEffect(() => {
-    const camera = cameraRef.current;
-    if (!camera) return;
+    const emojiText = baseEmojiRef.current;
+    if (!emojiText) return;
 
-    // Find and update the base emoji
-    const existingEmoji = camera.children.find(child => child.label === 'BaseEmoji');
-    if (existingEmoji && existingEmoji instanceof Text) {
-      const getBaseEmoji = () => {
-        if (baseHealth === 3) return '😊';
-        if (baseHealth === 2) return '😬';
-        if (baseHealth === 1) return '😱';
-        return '💀';
-      };
-      existingEmoji.text = getBaseEmoji();
-    }
+    const getBaseEmoji = () => {
+      if (baseHealth === 3) return '😊';
+      if (baseHealth === 2) return '😬';
+      if (baseHealth === 1) return '😱';
+      return '💀';
+    };
+
+    emojiText.text = getBaseEmoji();
   }, [baseHealth]);
 
   const theme = getThemeStyles(uiTheme);
