@@ -177,7 +177,7 @@ export const COMBAT_SETTINGS = {
 // Queue Item Types
 export interface BuildingQueueItem {
   action: 'add' | 'remove';
-  sprite?: import('pixi.js').Sprite;
+  sprite?: import('pixi.js').Sprite | import('pixi.js').Container;
   key?: string;
 }
 

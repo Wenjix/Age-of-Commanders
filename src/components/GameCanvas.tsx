@@ -54,6 +54,7 @@ export const GameCanvas = () => {
     label: string;
     mouseX: number;
     mouseY: number;
+    target: string; // "→ Base" or "→ Decoy at [x,y]"
   } | null>(null);
 
   useEffect(() => {
@@ -432,12 +433,22 @@ export const GameCanvas = () => {
             enemyContainer.eventMode = 'static';
             enemyContainer.cursor = 'pointer';
 
+            // Initialize target position tracking for smooth animation
+            (enemyContainer as any)._targetX = enemy.position[0] * TILE_SIZE;
+            (enemyContainer as any)._targetY = enemy.position[1] * TILE_SIZE;
+
             // Add hover event listeners
             enemyContainer.on('pointerenter', (event) => {
+              // Determine target display text
+              const targetText = enemy.isDistracted
+                ? `→ Decoy at [${enemy.targetPosition[0]}, ${enemy.targetPosition[1]}]`
+                : '→ Base';
+
               setHoveredEnemy({
                 label: enemy.label,
                 mouseX: event.global.x,
                 mouseY: event.global.y,
+                target: targetText,
               });
             });
 
@@ -454,9 +465,41 @@ export const GameCanvas = () => {
             enemyGraphics.set(enemy.id, enemyContainer);
             queuedAdds++;
           } else {
-            // Update existing enemy position
+            // Update existing enemy position with smooth animation
             const container = enemyGraphics.get(enemy.id)!;
-            container.position.set(enemy.position[0] * TILE_SIZE, enemy.position[1] * TILE_SIZE);
+            const newX = enemy.position[0] * TILE_SIZE;
+            const newY = enemy.position[1] * TILE_SIZE;
+
+            // Check if position has changed (use custom property to track)
+            const prevX = (container as any)._targetX ?? container.position.x;
+            const prevY = (container as any)._targetY ?? container.position.y;
+
+            if (prevX !== newX || prevY !== newY) {
+              // Position changed, animate the movement
+              const startX = container.position.x;
+              const startY = container.position.y;
+              const startTime = Date.now();
+              const duration = 250; // 250ms smooth slide
+
+              const animate = () => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Linear interpolation
+                container.position.x = startX + (newX - startX) * progress;
+                container.position.y = startY + (newY - startY) * progress;
+
+                if (progress < 1) {
+                  requestAnimationFrame(animate);
+                }
+              };
+
+              animate();
+
+              // Store target position for next frame
+              (container as any)._targetX = newX;
+              (container as any)._targetY = newY;
+            }
 
             // Update appearance if marked for death
             if (enemy.markedForDeath && container.children.length < 3) {
@@ -715,9 +758,14 @@ export const GameCanvas = () => {
         >
           <div className="flex items-center gap-2">
             <span className="text-lg">👹</span>
-            <p className={`text-sm font-semibold ${theme.bodyText}`}>
-              {hoveredEnemy.label}
-            </p>
+            <div className="flex flex-col">
+              <p className={`text-sm font-semibold ${theme.bodyText}`}>
+                {hoveredEnemy.label}
+              </p>
+              <p className={`text-xs ${theme.mutedText}`}>
+                {hoveredEnemy.target}
+              </p>
+            </div>
           </div>
         </div>
       )}
