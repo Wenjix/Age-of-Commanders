@@ -5,7 +5,6 @@ import type { Building, BuildingType, Enemy } from '../store/useGameStore';
 import {
   TILE_SIZE,
   GRID_SIZE,
-  TOP_BAR_HEIGHT,
   COLORS,
   Z_LAYERS,
   CAMERA_SETTINGS,
@@ -113,10 +112,8 @@ export const GameCanvas = () => {
     // Initialize PixiJS Application
     (async () => {
       app = new Application();
-      
+
       await app.init({
-        width: window.innerWidth,
-        height: window.innerHeight - TOP_BAR_HEIGHT,
         backgroundColor: COLORS.BACKGROUND,
         resizeTo: canvasRef.current!,
       });
@@ -137,7 +134,7 @@ export const GameCanvas = () => {
       world.addChild(camera);
       cameraRef.current = camera;
 
-      const getTileTexture = (type: 'grass' | 'base') => {
+      const getTileTexture = (type: 'grass' | 'forest' | 'water' | 'base') => {
         if (tileTextureCache.has(type)) {
           return tileTextureCache.get(type)!;
         }
@@ -148,6 +145,16 @@ export const GameCanvas = () => {
             .rect(0, 0, TILE_SIZE, TILE_SIZE)
             .fill({ color: COLORS.GRASS.FILL })
             .stroke({ width: 1, color: COLORS.GRASS.STROKE });
+        } else if (type === 'forest') {
+          graphic
+            .rect(0, 0, TILE_SIZE, TILE_SIZE)
+            .fill({ color: COLORS.FOREST.FILL })
+            .stroke({ width: 1, color: COLORS.FOREST.STROKE });
+        } else if (type === 'water') {
+          graphic
+            .rect(0, 0, TILE_SIZE, TILE_SIZE)
+            .fill({ color: COLORS.WATER.FILL })
+            .stroke({ width: 1, color: COLORS.WATER.STROKE });
         } else {
           graphic
             .rect(0, 0, TILE_SIZE * 2, TILE_SIZE * 2)
@@ -199,10 +206,21 @@ export const GameCanvas = () => {
         return texture;
       };
 
-      const grassTexture = getTileTexture('grass');
+      // Render tiles with different textures based on row
       for (let y = 0; y < GRID_SIZE; y++) {
         for (let x = 0; x < GRID_SIZE; x++) {
-          const tile = new Sprite(grassTexture);
+          // Determine tile type based on row
+          let tileType: 'grass' | 'forest' | 'water';
+          if (y < 3) {
+            tileType = 'forest';
+          } else if (y >= GRID_SIZE - 2) {
+            tileType = 'water';
+          } else {
+            tileType = 'grass';
+          }
+
+          const texture = getTileTexture(tileType);
+          const tile = new Sprite(texture);
           tile.position.set(x * TILE_SIZE, y * TILE_SIZE);
           tile.zIndex = Z_LAYERS.TILES;
           tile.roundPixels = true;

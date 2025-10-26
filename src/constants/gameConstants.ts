@@ -125,6 +125,18 @@ export const COLORS = {
     STROKE: 0x1a5a1a,
   },
 
+  // Forest Tile
+  FOREST: {
+    FILL: 0x0d4f0d,    // Dark green
+    STROKE: 0x083208,  // Even darker green
+  },
+
+  // Water Tile
+  WATER: {
+    FILL: 0x1e90ff,    // Dodger blue
+    STROKE: 0x0066cc,  // Darker blue
+  },
+
   // Base Building
   BASE: 0xff0000,
 
@@ -139,16 +151,16 @@ export const COLORS = {
       STROKE: 0x1e40af,
     },
     DECOY: {
-      FILL: 0xfbbf24,
-      STROKE: 0xf59e0b,
+      FILL: 0xa78bfa,
+      STROKE: 0x8b5cf6,
     },
     MINE: {
       FILL: 0xef4444,
       STROKE: 0xb91c1c,
     },
     FARM: {
-      FILL: 0x22c55e,
-      STROKE: 0x16a34a,
+      FILL: 0xfbbf24,
+      STROKE: 0xf59e0b,
     },
     DEFAULT: {
       FILL: 0x808080,
