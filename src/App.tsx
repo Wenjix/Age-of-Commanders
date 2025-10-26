@@ -5,6 +5,7 @@ import { GameCanvas } from './components/GameCanvas';
 import { CommanderPanel } from './components/CommanderPanel';
 import { CommandInput } from './components/CommandInput';
 import { ExecutionController } from './components/ExecutionController';
+import { ExecutionHUD } from './components/ExecutionHUD';
 import { ExecutionScreen } from './components/ExecutionScreen';
 import { BuildingCuration } from './components/BuildingCuration';
 import { DebriefScreen } from './components/DebriefScreen';
@@ -28,6 +29,7 @@ function App() {
       <DebriefScreen />
       <ExecutionScreen />
       <ExecutionController />
+      <ExecutionHUD />
       <TopBar />
       <PhaseIndicator />
       <div className="flex-1 overflow-hidden">

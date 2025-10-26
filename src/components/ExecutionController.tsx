@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
-import { BUILDING_COSTS } from '../constants/gameConstants';
 import toast from 'react-hot-toast';
+import { spawnInitialWave } from '../services/enemyService';
+import { stopAutoAdvance } from '../services/turnManager';
 
 export const ExecutionController = () => {
   const phase = useGameStore((state) => state.phase);
-  const commanders = useGameStore((state) => state.commanders);
-  const placeBuilding = useGameStore((state) => state.placeBuilding);
   const setPhase = useGameStore((state) => state.setPhase);
-  const wood = useGameStore((state) => state.wood);
-  const deductWood = useGameStore((state) => state.deductWood);
-  
+  const currentTurn = useGameStore((state) => state.currentTurn);
+  const maxTurns = useGameStore((state) => state.maxTurns);
+  const baseHealth = useGameStore((state) => state.baseHealth);
+  const enemies = useGameStore((state) => state.enemies);
+  const clearTurnLog = useGameStore((state) => state.clearTurnLog);
+  const setCurrentTurn = useGameStore((state) => state.setCurrentTurn);
+
   const [executionStarted, setExecutionStarted] = useState(false);
 
   useEffect(() => {
@@ -18,54 +21,71 @@ export const ExecutionController = () => {
 
     setExecutionStarted(true);
 
-    // Place all secret builds immediately (but they remain hidden)
-    let totalWoodUsed = 0;
-    let totalBuildings = 0;
+    // Reset turn system for new execution
+    clearTurnLog();
+    setCurrentTurn(0);
 
-    commanders.forEach((commander) => {
-      commander.secretBuilds.forEach((building) => {
-        const cost = BUILDING_COSTS[building.type];
-        
-        // Check if we can afford it
-        if (wood - totalWoodUsed >= cost) {
-          // Place the building (it's marked as revealed: false)
-          const placed = placeBuilding(building);
-          
-          if (placed) {
-            totalWoodUsed += cost;
-            totalBuildings++;
-          }
-        }
-      });
+    // Spawn initial enemy wave
+    toast.success('Execution phase started! Enemy wave incoming...', {
+      duration: 3000,
+      icon: '⚔️'
     });
 
-    // Deduct all the wood at once
-    if (totalWoodUsed > 0) {
-      deductWood(totalWoodUsed);
+    // Spawn enemies after a short delay
+    setTimeout(() => {
+      spawnInitialWave();
+    }, 500);
+
+  }, [phase, executionStarted, clearTurnLog, setCurrentTurn]);
+
+  // Monitor for game end conditions
+  useEffect(() => {
+    if (phase !== 'execute') return;
+
+    // Check defeat condition
+    if (baseHealth <= 0) {
+      stopAutoAdvance();
+      toast.error('Base destroyed! Glory in defeat!', {
+        duration: 5000,
+        icon: '💀'
+      });
+      setTimeout(() => {
+        setPhase('debrief');
+      }, 2000);
     }
 
-    toast.success(
-      `Execution started! ${totalBuildings} buildings planned (${totalWoodUsed} wood)`,
-      { duration: 3000 }
-    );
+    // Check victory condition
+    if (enemies.length === 0 && currentTurn >= 3) {
+      stopAutoAdvance();
+      toast.success('All enemies defeated! Tactical victory!', {
+        duration: 5000,
+        icon: '🎉'
+      });
+      setTimeout(() => {
+        setPhase('debrief');
+      }, 2000);
+    }
 
-    // Simulate wave duration (5 seconds for demo, would be 5 minutes in real game)
-    const waveDuration = 5000; // 5 seconds
-    
-    toast.loading('Enemy wave incoming...', { id: 'wave', duration: waveDuration });
-
-    setTimeout(() => {
-      toast.success('Wave complete! Revealing builds...', { id: 'wave' });
-      setPhase('debrief');
-      setExecutionStarted(false);
-    }, waveDuration);
-
-  }, [phase, executionStarted, commanders, placeBuilding, setPhase, wood, deductWood]);
+    // Check max turns reached
+    if (currentTurn >= maxTurns) {
+      stopAutoAdvance();
+      if (enemies.length > 0) {
+        toast.success(`Survived ${maxTurns} turns! Strategic victory!`, {
+          duration: 5000,
+          icon: '🏆'
+        });
+      }
+      setTimeout(() => {
+        setPhase('debrief');
+      }, 2000);
+    }
+  }, [phase, baseHealth, enemies.length, currentTurn, maxTurns, setPhase]);
 
   // Reset execution started when phase changes away from execute
   useEffect(() => {
     if (phase !== 'execute') {
       setExecutionStarted(false);
+      stopAutoAdvance();
     }
   }, [phase]);
 

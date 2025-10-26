@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { TurnLogEntry, CommanderThought } from '../types/turnLog';
 
 export type Personality = 'literalist' | 'paranoid' | 'optimist';
 export type GamePhase = 'draft' | 'curate' | 'teach' | 'execute' | 'debrief';
@@ -30,6 +31,8 @@ export interface Enemy {
   health: number;
   targetPosition: [number, number];
   isDistracted: boolean;
+  label: string; // Comedic name like "Confused Invader"
+  markedForDeath?: boolean; // Tower will destroy next turn
 }
 
 export interface Commander {
@@ -46,6 +49,7 @@ export interface Commander {
 interface GameState {
   wood: number;
   basePosition: { x: number; y: number };
+  baseHealth: number; // Base can take 3 hits
   buildings: Building[];
   enemies: Enemy[];
   enabledBuildings: BuildingType[]; // Player-selected buildings (3 max)
@@ -82,6 +86,28 @@ interface GameState {
   revealingBuildings: boolean; // Track if reveal animation is in progress
   setRevealingBuildings: (revealing: boolean) => void;
   revealBuilding: (x: number, y: number) => void; // Reveal individual building
+
+  // Turn system state
+  currentTurn: number;
+  maxTurns: number;
+  isPaused: boolean;
+  turnSpeed: number; // Milliseconds between auto-advance
+  turnLog: TurnLogEntry[];
+  commanderThoughts: CommanderThought[]; // Current thoughts being displayed
+
+  // Turn system actions
+  setCurrentTurn: (turn: number) => void;
+  nextTurn: () => void;
+  previousTurn: () => void;
+  pauseGame: () => void;
+  resumeGame: () => void;
+  setTurnSpeed: (speed: number) => void;
+  addTurnLogEntry: (entry: TurnLogEntry) => void;
+  clearTurnLog: () => void;
+  addCommanderThought: (thought: CommanderThought) => void;
+  clearCommanderThoughts: () => void;
+  damageBase: () => void;
+
   resetGame: () => void;
 }
 
@@ -121,6 +147,7 @@ const initialCommanders: Commander[] = [
 export const useGameStore = create<GameState>((set, get) => ({
   wood: 50,
   basePosition: { x: 12, y: 12 },
+  baseHealth: 3,
   buildings: [],
   enemies: [],
   enabledBuildings: [],
@@ -128,6 +155,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   resetZoom: null,
   setResetZoom: (fn) => set({ resetZoom: fn }),
   commanders: initialCommanders,
+
+  // Turn system initial state
+  currentTurn: 0,
+  maxTurns: 10,
+  isPaused: false,
+  turnSpeed: 2000,
+  turnLog: [],
+  commanderThoughts: [],
   
   updateCommanderInterpretation: (id, interpretation) =>
     set((state) => ({
@@ -288,9 +323,82 @@ export const useGameStore = create<GameState>((set, get) => ({
     }));
   },
 
+  // Turn system actions
+  setCurrentTurn: (turn) => set({ currentTurn: turn }),
+
+  nextTurn: () => {
+    const state = get();
+    if (state.currentTurn < state.maxTurns) {
+      set({ currentTurn: state.currentTurn + 1 });
+    }
+  },
+
+  previousTurn: () => {
+    const state = get();
+    if (state.currentTurn > 0) {
+      set({ currentTurn: state.currentTurn - 1 });
+    }
+  },
+
+  pauseGame: () => set({ isPaused: true }),
+  resumeGame: () => set({ isPaused: false }),
+  setTurnSpeed: (speed) => set({ turnSpeed: speed }),
+
+  addTurnLogEntry: (entry) => {
+    set((state) => ({
+      turnLog: [...state.turnLog, entry],
+    }));
+  },
+
+  clearTurnLog: () => set({ turnLog: [] }),
+
+  addCommanderThought: (thought) => {
+    set((state) => ({
+      commanderThoughts: [...state.commanderThoughts, thought],
+    }));
+
+    // Auto-remove thought after duration
+    setTimeout(() => {
+      set((state) => ({
+        commanderThoughts: state.commanderThoughts.filter(
+          (t) => t.commanderId !== thought.commanderId || t.text !== thought.text
+        ),
+      }));
+    }, thought.duration);
+  },
+
+  clearCommanderThoughts: () => set({ commanderThoughts: [] }),
+
+  damageBase: () => {
+    const state = get();
+    const newHealth = Math.max(0, state.baseHealth - 1);
+    set({ baseHealth: newHealth });
+
+    // Add to turn log
+    state.addTurnLogEntry({
+      turn: state.currentTurn,
+      type: 'base_damaged',
+      description: `Base took damage! Health: ${newHealth}/3`,
+      impact: 'high',
+      emoji: newHealth === 0 ? '💀' : newHealth === 1 ? '😱' : '😬',
+    });
+
+    if (newHealth === 0) {
+      state.addTurnLogEntry({
+        turn: state.currentTurn,
+        type: 'defeat',
+        description: 'The base has been destroyed! Glory in defeat!',
+        impact: 'high',
+        emoji: '💀',
+      });
+      set({ phase: 'debrief' });
+    }
+  },
+
   resetGame: () => {
     set({
       wood: 50,
+      baseHealth: 3,
       buildings: [],
       enemies: [],
       enabledBuildings: [],
@@ -298,6 +406,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       phase: 'draft',
       debriefPanelWidth: 0,
       revealingBuildings: false,
+      currentTurn: 0,
+      isPaused: false,
+      turnLog: [],
+      commanderThoughts: [],
     });
   },
 }));

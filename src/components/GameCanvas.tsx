@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Application, Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { Application, Container, Graphics, Sprite, Texture, Text } from 'pixi.js';
 import { useGameStore } from '../store/useGameStore';
-import type { Building, BuildingType } from '../store/useGameStore';
+import type { Building, BuildingType, Enemy } from '../store/useGameStore';
 import {
   TILE_SIZE,
   GRID_SIZE,
@@ -23,6 +23,9 @@ export const GameCanvas = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const basePosition = useGameStore((state) => state.basePosition);
   const buildings = useGameStore((state) => state.buildings);
+  const enemies = useGameStore((state) => state.enemies);
+  const baseHealth = useGameStore((state) => state.baseHealth);
+  const commanderThoughts = useGameStore((state) => state.commanderThoughts);
   const debriefPanelWidth = useGameStore((state) => state.debriefPanelWidth);
   const setResetZoom = useGameStore((state) => state.setResetZoom);
   const uiTheme = useGameStore((state) => state.uiTheme);
@@ -32,8 +35,12 @@ export const GameCanvas = () => {
   const buildingTextureCacheRef = useRef<Map<Building['type'], Texture>>(new Map());
   const tileTextureCacheRef = useRef<Map<string, Texture>>(new Map());
   const buildingsRef = useRef<Building[]>([]);
+  const enemiesRef = useRef<Enemy[]>([]);
+  const enemyGraphicsRef = useRef<Map<string, Container>>(new Map());
+  const thoughtBubblesRef = useRef<Map<string, Container>>(new Map());
   const renderBuildingsRef = useRef<(() => void) | null>(null);
-  const buildingQueueRef = useRef<BuildingQueueItem[]>([]);
+  const renderEnemiesRef = useRef<(() => void) | null>(null);
+  const renderQueueRef = useRef<BuildingQueueItem[]>([]);
   const tickerHandlerRef = useRef<(() => void) | null>(null);
 
   // State for hover tooltip
@@ -201,7 +208,7 @@ export const GameCanvas = () => {
           return;
         }
 
-        const queue = buildingQueueRef.current;
+        const queue = renderQueueRef.current;
         if (queue.length === 0) return;
 
         console.log(`[Ticker] Processing ${queue.length} queued items`);
@@ -274,7 +281,7 @@ export const GameCanvas = () => {
           if (existingEntry && existingEntry.type !== building.type) {
             // Type changed, need to remove and recreate
             // Queue for removal
-            buildingQueueRef.current.push({
+            renderQueueRef.current.push({
               action: 'remove',
               sprite: existingEntry.display,
               key: key
@@ -344,7 +351,7 @@ export const GameCanvas = () => {
             graphicsMap.set(key, { display: buildingSprite, type: building.type });
 
             // Queue the sprite to be added during ticker update
-            buildingQueueRef.current.push({
+            renderQueueRef.current.push({
               action: 'add',
               sprite: buildingSprite,
               key: key
@@ -357,7 +364,7 @@ export const GameCanvas = () => {
         for (const [key, entry] of Array.from(graphicsMap.entries())) {
           if (!activeKeys.has(key)) {
             // Queue the sprite to be removed during ticker update
-            buildingQueueRef.current.push({
+            renderQueueRef.current.push({
               action: 'remove',
               sprite: entry.display,
               key: key
@@ -368,16 +375,153 @@ export const GameCanvas = () => {
           }
         }
 
-        console.log(`[RenderBuildings] Queued ${queuedAdds} adds, ${queuedRemoves} removes. Total in queue: ${buildingQueueRef.current.length}`);
+        console.log(`[RenderBuildings] Queued ${queuedAdds} adds, ${queuedRemoves} removes. Total in queue: ${renderQueueRef.current.length}`);
 
         // Don't sort here, let the ticker do it after processing queue
       };
+
+      renderBuildingsRef.current = renderBuildings;
+
+      // Function to render enemies
+      const renderEnemies = () => {
+        if (!camera || !app) {
+          console.warn('[RenderEnemies] Camera or app not available');
+          return;
+        }
+
+        console.log(`[RenderEnemies] Processing ${enemiesRef.current.length} enemies`);
+        const enemyGraphics = enemyGraphicsRef.current;
+        const activeIds = new Set<string>();
+        let queuedAdds = 0;
+        let queuedRemoves = 0;
+
+        enemiesRef.current.forEach((enemy) => {
+          activeIds.add(enemy.id);
+
+          if (!enemyGraphics.has(enemy.id)) {
+            // Create enemy container
+            const enemyContainer = new Container();
+
+            // Create enemy body (red circle)
+            const enemyBody = new Graphics();
+            enemyBody
+              .circle(TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE * 0.35)
+              .fill({ color: enemy.markedForDeath ? 0x800000 : 0xFF0000 });
+
+            // Create enemy label
+            const label = new Text({
+              text: enemy.label,
+              style: {
+                fontSize: 10,
+                fill: 0xFFFFFF,
+                fontFamily: 'Arial',
+                stroke: { color: 0x000000, width: 2 }
+              }
+            });
+            label.anchor.set(0.5, 1);
+            label.position.set(TILE_SIZE / 2, -2);
+
+            // Add health indicator if damaged
+            if (enemy.markedForDeath) {
+              const skull = new Text({
+                text: '💀',
+                style: { fontSize: 14 }
+              });
+              skull.anchor.set(0.5);
+              skull.position.set(TILE_SIZE / 2, TILE_SIZE / 2);
+              enemyContainer.addChild(skull);
+            }
+
+            enemyContainer.addChild(enemyBody);
+            enemyContainer.addChild(label);
+            enemyContainer.position.set(enemy.position[0] * TILE_SIZE, enemy.position[1] * TILE_SIZE);
+            enemyContainer.zIndex = Z_LAYERS.ENEMIES;
+            enemyContainer.label = `Enemy-${enemy.id}`;
+
+            // Queue the container to be added during ticker update
+            renderQueueRef.current.push({
+              action: 'add',
+              sprite: enemyContainer,
+              key: enemy.id
+            });
+            enemyGraphics.set(enemy.id, enemyContainer);
+            queuedAdds++;
+          } else {
+            // Update existing enemy position
+            const container = enemyGraphics.get(enemy.id)!;
+            container.position.set(enemy.position[0] * TILE_SIZE, enemy.position[1] * TILE_SIZE);
+
+            // Update appearance if marked for death
+            if (enemy.markedForDeath && container.children.length < 3) {
+              const skull = new Text({
+                text: '💀',
+                style: { fontSize: 14 }
+              });
+              skull.anchor.set(0.5);
+              skull.position.set(TILE_SIZE / 2, TILE_SIZE / 2);
+              container.addChild(skull);
+            }
+          }
+        });
+
+        // Queue removal of enemies that no longer exist
+        enemyGraphics.forEach((container, id) => {
+          if (!activeIds.has(id)) {
+            // Queue the container to be removed during ticker update
+            renderQueueRef.current.push({
+              action: 'remove',
+              sprite: container,
+              key: id
+            });
+            enemyGraphics.delete(id);
+            queuedRemoves++;
+          }
+        });
+
+        console.log(`[RenderEnemies] Queued ${queuedAdds} adds, ${queuedRemoves} removes. Total in queue: ${renderQueueRef.current.length}`);
+
+        // Don't sort here, let the ticker do it after processing queue
+      };
+
+      renderEnemiesRef.current = renderEnemies;
+
+      // Add base health emoji
+      const addBaseHealthEmoji = () => {
+        if (!camera || !app) return;
+
+        const getBaseEmoji = () => {
+          const health = useGameStore.getState().baseHealth;
+          if (health === 3) return '😊';
+          if (health === 2) return '😬';
+          if (health === 1) return '😱';
+          return '💀';
+        };
+
+        const emojiText = new Text({
+          text: getBaseEmoji(),
+          style: { fontSize: 24 }
+        });
+        emojiText.anchor.set(0.5);
+        emojiText.position.set(
+          basePosition.x * TILE_SIZE + TILE_SIZE,
+          basePosition.y * TILE_SIZE - 10
+        );
+        emojiText.zIndex = Z_LAYERS.ENEMIES;
+        emojiText.label = 'BaseEmoji';
+        camera.addChild(emojiText);
+      };
+
+      addBaseHealthEmoji();
 
       renderBuildingsRef.current = renderBuildings;
       // Run an initial sync now that Pixi is ready
       const currentBuildings = useGameStore.getState().buildings;
       buildingsRef.current = [...currentBuildings];
       renderBuildings();
+
+      const currentEnemies = useGameStore.getState().enemies;
+      enemiesRef.current = [...currentEnemies];
+      renderEnemies();
 
       // Center camera on the grid
       defaultCameraX = app.screen.width / 2 - (GRID_SIZE * TILE_SIZE) / 2;
@@ -431,7 +575,7 @@ export const GameCanvas = () => {
       }
 
       // Clear any pending queue items
-      buildingQueueRef.current = [];
+      renderQueueRef.current = [];
 
       buildingGraphicsMap.forEach(({ display }) => {
         display.destroy();
@@ -468,6 +612,34 @@ export const GameCanvas = () => {
     console.log(`[BuildingSync] Updating from ${previousCount} to ${buildings.length} buildings`);
     renderBuildingsRef.current();
   }, [buildings]);
+
+  // Handle enemy changes
+  useEffect(() => {
+    if (!renderEnemiesRef.current) {
+      return;
+    }
+
+    enemiesRef.current = [...enemies];
+    renderEnemiesRef.current();
+  }, [enemies]);
+
+  // Handle base health changes - update emoji
+  useEffect(() => {
+    const camera = cameraRef.current;
+    if (!camera) return;
+
+    // Find and update the base emoji
+    const existingEmoji = camera.children.find(child => child.label === 'BaseEmoji');
+    if (existingEmoji && existingEmoji instanceof Text) {
+      const getBaseEmoji = () => {
+        if (baseHealth === 3) return '😊';
+        if (baseHealth === 2) return '😬';
+        if (baseHealth === 1) return '😱';
+        return '💀';
+      };
+      existingEmoji.text = getBaseEmoji();
+    }
+  }, [baseHealth]);
 
   const theme = getThemeStyles(uiTheme);
 

@@ -30,6 +30,10 @@ export const DebriefScreen = () => {
   const commanders = useGameStore((state) => state.commanders);
   const buildings = useGameStore((state) => state.buildings);
   const wood = useGameStore((state) => state.wood);
+  const turnLog = useGameStore((state) => state.turnLog);
+  const baseHealth = useGameStore((state) => state.baseHealth);
+  const currentTurn = useGameStore((state) => state.currentTurn);
+  const enemies = useGameStore((state) => state.enemies);
   const revealAllBuildings = useGameStore((state) => state.revealAllBuildings);
   const revealBuilding = useGameStore((state) => state.revealBuilding);
   const uiTheme = useGameStore((state) => state.uiTheme);
@@ -392,6 +396,98 @@ export const DebriefScreen = () => {
             </div>
           ))}
         </div>
+
+        {/* Turn-by-Turn Log */}
+        {turnLog.length > 0 && (
+          <div className={`${theme.buildingCardBackground} ${theme.cardBorder} rounded-lg p-4`}>
+            <h3 className={`${theme.headingText} text-lg font-bold mb-3`}>
+              📜 Battle Chronicle (Turn {currentTurn}/{10})
+            </h3>
+
+            {/* Victory/Defeat Status */}
+            <div className="mb-3">
+              {baseHealth === 0 ? (
+                <div className="bg-red-900/50 border border-red-500 rounded-lg p-3 text-center">
+                  <span className="text-2xl">💀</span>
+                  <p className={`${theme.headingText} text-lg font-bold`}>GLORY IN DEFEAT!</p>
+                  <p className={`${theme.mutedText} text-sm`}>The base was destroyed on turn {currentTurn}</p>
+                </div>
+              ) : enemies.length === 0 ? (
+                <div className="bg-green-900/50 border border-green-500 rounded-lg p-3 text-center">
+                  <span className="text-2xl">🎉</span>
+                  <p className={`${theme.headingText} text-lg font-bold`}>TACTICAL VICTORY!</p>
+                  <p className={`${theme.mutedText} text-sm`}>All enemies defeated!</p>
+                </div>
+              ) : (
+                <div className="bg-blue-900/50 border border-blue-500 rounded-lg p-3 text-center">
+                  <span className="text-2xl">🏆</span>
+                  <p className={`${theme.headingText} text-lg font-bold`}>STRATEGIC VICTORY!</p>
+                  <p className={`${theme.mutedText} text-sm`}>Survived {currentTurn} turns with {enemies.length} enemies remaining</p>
+                </div>
+              )}
+            </div>
+
+            {/* Turn Log Entries */}
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {/* Group log entries by turn */}
+              {Array.from({ length: currentTurn }, (_, i) => i + 1).map(turn => {
+                const turnEntries = turnLog.filter(entry => entry.turn === turn);
+                if (turnEntries.length === 0) return null;
+
+                return (
+                  <div key={turn} className={`${theme.secondaryButtonBackground} rounded p-2`}>
+                    <p className={`${theme.headingText} text-sm font-bold mb-1`}>Turn {turn}</p>
+                    <div className="space-y-1">
+                      {turnEntries.map((entry, idx) => (
+                        <div
+                          key={idx}
+                          className={`flex items-start gap-2 text-xs ${
+                            entry.impact === 'high'
+                              ? 'font-semibold'
+                              : entry.impact === 'medium'
+                              ? 'font-medium'
+                              : ''
+                          }`}
+                        >
+                          <span className="text-base">{entry.emoji || '•'}</span>
+                          <span className={entry.impact === 'high' ? theme.headingText : theme.bodyText}>
+                            {entry.description}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Most Impactful Events */}
+            {(() => {
+              const impactfulEvents = turnLog
+                .filter(e => e.impact === 'high')
+                .slice(-3);
+
+              if (impactfulEvents.length > 0) {
+                return (
+                  <div className="mt-3 pt-3 border-t border-gray-700">
+                    <p className={`${theme.mutedText} text-xs mb-2`}>Most Impactful Moments:</p>
+                    <div className="space-y-1">
+                      {impactfulEvents.map((event, idx) => (
+                        <div key={idx} className="flex items-start gap-2">
+                          <span>{event.emoji}</span>
+                          <span className={`${theme.headingText} text-xs`}>
+                            Turn {event.turn}: {event.description}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+          </div>
+        )}
 
         {/* Highlight Reel */}
         {highlights.length > 0 && (
