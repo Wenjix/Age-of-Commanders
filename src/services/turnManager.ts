@@ -91,20 +91,31 @@ export async function processTurn(): Promise<TurnResult> {
 
   // Check for intermission after turn 8 or 16
   if (currentTurn === 8 || currentTurn === 16) {
-    const bonus = currentTurn === 8
+    // Baseline bonus (scales up for later acts)
+    const baselineBonus = currentTurn === 8 ? 10 : 15;
+
+    // Calculate performance bonus
+    const performanceBonus = currentTurn === 8
       ? state.calculateAct1Bonus()
       : state.calculateAct2Bonus();
 
-    if (bonus > 0) {
-      state.addWood(bonus);
-      state.addTurnLogEntry({
-        turn: currentTurn,
-        type: 'building_placed', // Reuse existing type
-        description: `Act ${state.currentAct} bonus: +${bonus} wood! Total: ${state.wood + bonus} wood`,
-        impact: 'high',
-        emoji: '🎁',
-      });
-    }
+    const totalBonus = baselineBonus + performanceBonus;
+
+    // Add all wood at once
+    state.addWood(totalBonus);
+
+    // Log message with breakdown
+    const bonusMessage = performanceBonus > 0
+      ? `Intermission: +${baselineBonus} base + ${performanceBonus} performance = +${totalBonus} wood!`
+      : `Intermission: +${baselineBonus} wood!`;
+
+    state.addTurnLogEntry({
+      turn: currentTurn,
+      type: 'building_placed',
+      description: bonusMessage,
+      impact: 'high',
+      emoji: '🎁',
+    });
 
     state.setIsIntermission(true);
     stopAutoAdvance(); // CRITICAL: Stop auto-advance when entering intermission
