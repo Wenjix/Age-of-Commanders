@@ -28,6 +28,11 @@
   hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed
 ");
 
+/* Commander Panel collapsible state utilities */
+@source inline("
+  w-8 h-8 text-xs
+");
+
 /* Z-index utilities for always-on-top elements */
 @source inline("
   z-[90] z-[100] z-[110]

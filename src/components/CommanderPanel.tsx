@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useGameStore, type Commander } from '../store/useGameStore';
 
 const CommanderAvatar = ({ commander }: { commander: Commander }) => {
@@ -33,19 +34,64 @@ const CommanderAvatar = ({ commander }: { commander: Commander }) => {
 export const CommanderPanel = () => {
   const commanders = useGameStore((state) => state.commanders);
   const phase = useGameStore((state) => state.phase);
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  // Hide during curate phase
-  if (phase === 'curate') {
+  // Hide during curate and debrief phases
+  if (phase === 'curate' || phase === 'debrief') {
     return null;
   }
 
   return (
-    <div className="bg-gray-950 border-t border-gray-700 p-4">
-      <div className="flex gap-4 max-w-7xl mx-auto">
-        {commanders.map((commander) => (
-          <CommanderAvatar key={commander.id} commander={commander} />
-        ))}
-      </div>
+    <div className="bg-gray-950 border-t border-gray-700 transition-all duration-300">
+      {!isExpanded ? (
+        /* Collapsed State */
+        <div className="px-4 py-2 flex items-center justify-center relative">
+          {/* Center: Small avatars in a row */}
+          <div className="flex items-center gap-2">
+            {commanders.map((commander) => (
+              <div
+                key={commander.id}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                style={{ backgroundColor: commander.colors.bg }}
+              >
+                {commander.name[0]}
+              </div>
+            ))}
+            <span className="text-gray-400 text-sm ml-2">Commanders Thinking...</span>
+          </div>
+
+          {/* Right: Expand button (absolute positioned) */}
+          <button
+            onClick={() => setIsExpanded(true)}
+            className="absolute right-4 text-gray-400 hover:text-white transition-colors px-3 py-1 rounded text-sm"
+          >
+            ▲ Expand
+          </button>
+        </div>
+      ) : (
+        /* Expanded State */
+        <div>
+          {/* Collapse button bar */}
+          <div className="px-4 py-2 border-b border-gray-700 flex justify-between items-center">
+            <span className="text-gray-400 text-sm">Commander Thoughts</span>
+            <button
+              onClick={() => setIsExpanded(false)}
+              className="text-gray-400 hover:text-white transition-colors px-3 py-1 rounded text-sm"
+            >
+              ▼ Collapse
+            </button>
+          </div>
+
+          {/* Commander content (existing layout) */}
+          <div className="p-4">
+            <div className="flex gap-4 max-w-7xl mx-auto">
+              {commanders.map((commander) => (
+                <CommanderAvatar key={commander.id} commander={commander} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
