@@ -42,6 +42,7 @@ export const GameCanvas = () => {
   const renderEnemiesRef = useRef<(() => void) | null>(null);
   const renderQueueRef = useRef<BuildingQueueItem[]>([]);
   const tickerHandlerRef = useRef<(() => void) | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   // State for hover tooltips
   const [hoveredBuilding, setHoveredBuilding] = useState<{
@@ -109,18 +110,62 @@ export const GameCanvas = () => {
       isDragging = false;
     };
 
-    // Initialize PixiJS Application
-    (async () => {
+    // Initialize ResizeObserver to watch container dimensions
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+
+        // Only proceed if container has non-zero dimensions
+        if (width === 0 || height === 0) {
+          console.log('[ResizeObserver] Container has zero dimensions, waiting...');
+          return;
+        }
+
+        console.log(`[ResizeObserver] Container dimensions: ${width}x${height}`);
+
+        // If app exists, resize it
+        if (app && isInitialized) {
+          console.log('[ResizeObserver] Resizing existing PixiJS renderer');
+          app.renderer.resize(width, height);
+
+          // Recenter camera after resize
+          if (camera) {
+            defaultCameraX = width / 2 - (GRID_SIZE * TILE_SIZE) / 2;
+            defaultCameraY = height / 2 - (GRID_SIZE * TILE_SIZE) / 2;
+            camera.x = defaultCameraX;
+            camera.y = defaultCameraY;
+            cameraPosition = { x: camera.x, y: camera.y };
+          }
+          return;
+        }
+
+        // Initialize PixiJS only once when container has valid dimensions
+        if (!app && !isInitialized) {
+          console.log('[ResizeObserver] Initializing PixiJS with dimensions:', width, height);
+          initializePixiApp(width, height);
+        }
+      }
+    });
+
+    // Start observing the canvas container
+    if (canvasRef.current) {
+      resizeObserver.observe(canvasRef.current);
+      resizeObserverRef.current = resizeObserver;
+    }
+
+    // Initialize PixiJS Application (called by ResizeObserver)
+    const initializePixiApp = async (width: number, height: number) => {
       app = new Application();
 
       await app.init({
+        width,
+        height,
         backgroundColor: COLORS.BACKGROUND,
-        resizeTo: canvasRef.current!,
       });
       appRef.current = app;
 
       if (!canvasRef.current) return;
-      
+
       canvasRef.current.appendChild(app.canvas);
       isInitialized = true;
 
@@ -642,11 +687,17 @@ export const GameCanvas = () => {
 
       // Expose reset function to store
       setResetZoom(resetZoom);
-    })();
+    };
 
     // Cleanup on unmount
     return () => {
       setResetZoom(null);
+
+      // Disconnect ResizeObserver
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
+      }
 
       // Remove ticker handler if it exists (before nulling appRef)
       if (appRef.current && tickerHandlerRef.current) {
