@@ -1,5 +1,6 @@
 import { useGameStore } from '../store/useGameStore';
 import type { Enemy, Building } from '../store/useGameStore';
+import { getFootprint, BUILDING_BLOCKS_MOVEMENT } from '../constants/gameConstants';
 
 const ENEMY_LABELS = [
   'Confused Invader',
@@ -219,10 +220,8 @@ function calculateEnemyMove(enemy: Enemy): [number, number] {
     // Check if tile is out of bounds
     if (nx < 0 || nx >= 26 || ny < 0 || ny >= 26) continue;
 
-    // Check if tile is blocked by wall or tower
-    const wall = getWallAtPosition([nx, ny]);
-    const tower = getTowerAtPosition([nx, ny]);
-    if (wall || tower) continue;
+    // Check if tile is blocked by any building (walls, towers, etc.)
+    if (isTileBlocked([nx, ny])) continue;
 
     // Calculate distance to target
     const distance = calculateDistance([nx, ny], targetPosition);
@@ -251,15 +250,26 @@ function isPositionOnBase(position: [number, number]): boolean {
   );
 }
 
-// Get wall at position
-function getWallAtPosition(position: [number, number]): Building | null {
+// Check if a tile is blocked by any building (walls, towers, mines, etc.)
+function isTileBlocked(position: [number, number]): boolean {
   const state = useGameStore.getState();
-  return state.buildings.find(
-    b => b.position[0] === position[0] &&
-        b.position[1] === position[1] &&
-        b.type === 'wall'
-        // Note: revealed status doesn't affect blocking - walls always block
-  ) || null;
+  const [x, y] = position;
+
+  // Check all buildings to see if this position falls within their footprint
+  for (const building of state.buildings) {
+    // Check if this building blocks movement
+    if (!BUILDING_BLOCKS_MOVEMENT[building.type]) continue;
+
+    // Get all tiles occupied by this building
+    const footprint = getFootprint(building.type, building.position[0], building.position[1]);
+
+    // Check if the position matches any tile in the footprint
+    if (footprint.some(([fx, fy]) => fx === x && fy === y)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 // Get mine at position
@@ -270,17 +280,6 @@ function getMineAtPosition(position: [number, number]): Building | null {
         b.position[1] === position[1] &&
         b.type === 'mine'
         // Note: revealed status doesn't affect function - mines always explode
-  ) || null;
-}
-
-// Get tower at position
-function getTowerAtPosition(position: [number, number]): Building | null {
-  const state = useGameStore.getState();
-  return state.buildings.find(
-    b => b.position[0] === position[0] &&
-        b.position[1] === position[1] &&
-        b.type === 'tower'
-        // Note: revealed status doesn't affect function - towers always attack
   ) || null;
 }
 
