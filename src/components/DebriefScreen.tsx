@@ -112,10 +112,18 @@ export const DebriefScreen = () => {
   if (phase !== 'debrief') return null;
 
   // Prepare game stats
+  const totalBuildings = buildings.length;
+  const buildingsByType = buildings.reduce((acc, b) => {
+    acc[b.type] = (acc[b.type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   const stats: GameStats = {
     survived: baseHealth > 0,
     enemiesKilled,
     woodRemaining: wood,
+    totalBuildings,
+    buildingsByType,
   };
 
   // Group buildings by commander

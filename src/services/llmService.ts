@@ -12,12 +12,16 @@ const PERSONALITY_PROMPTS: Record<Personality, string> = {
   literalist: 'You interpret instructions WORD-FOR-WORD. Never assume intent. Be robotic.',
   paranoid: 'You believe everything is a trap. The enemy is always watching. Over-prepare.',
   optimist: 'You see friendship everywhere. Enemies are just misunderstood guests!',
+  ruthless: 'You seek total domination. Overwhelm the enemy with aggressive force. No mercy.',
+  trickster: 'You love clever tricks and misdirection. Confuse and outsmart your enemies with deceptive tactics.',
 };
 
 const FALLBACK_RESPONSES: Record<Personality, string> = {
   literalist: 'Processing command literally.',
   paranoid: 'Possible deception detected.',
   optimist: 'This sounds wonderful!',
+  ruthless: 'Overwhelming force authorized.',
+  trickster: 'A clever plan is forming...',
 };
 
 const CACHE_PREFIX = 'commander_interpretation_';
@@ -126,6 +130,8 @@ const PERSONALITY_LOADING_MESSAGES: Record<Personality, string> = {
   literalist: 'analyzing command syntax',
   paranoid: 'detecting hidden threats',
   optimist: 'finding friendship opportunities',
+  ruthless: 'planning total domination',
+  trickster: 'devising clever schemes',
 };
 
 export function getLoadingMessage(personality: Personality): string {
@@ -221,6 +227,20 @@ export function interpretSkipAsCommand(
         { type: 'build', building: 'decoy', position: [10, 8] },
         { type: 'build', building: 'farm', position: [14, 8] },
       ];
+
+    case 'ruthless':
+      // Build aggressive offensive structures
+      return [
+        { type: 'build', building: 'tower', position: [12, 10] },
+        { type: 'build', building: 'tower', position: [13, 10] },
+      ];
+
+    case 'trickster':
+      // Build confusing/deceptive structures
+      return [
+        { type: 'build', building: 'decoy', position: [11, 9] },
+        { type: 'build', building: 'mine', position: [14, 9] },
+      ];
   }
 }
 
@@ -235,6 +255,10 @@ export function getSkipThought(personality: Personality): string {
       return "They've gone silent… it's a trap. Assume worst-case.";
     case 'optimist':
       return "They trust us to handle it! Let's get creative!";
+    case 'ruthless':
+      return "No orders? Time to unleash maximum force!";
+    case 'trickster':
+      return "Silence means they want me to improvise something devious…";
   }
 }
 

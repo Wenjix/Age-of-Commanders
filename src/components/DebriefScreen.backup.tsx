@@ -19,10 +19,12 @@ const BUILDING_ICONS: Record<string, string> = {
   farm: '🌾',
 };
 
-const PERSONALITY_EMOJIS = {
+const PERSONALITY_EMOJIS: Record<Personality, string> = {
   literalist: '😐',
   paranoid: '😰',
   optimist: '😊',
+  ruthless: '😈',
+  trickster: '😏',
 };
 
 // Commander reveal order (constant across all debrief screens)

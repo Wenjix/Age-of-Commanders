@@ -323,7 +323,7 @@ function getCommanderFailureThought(personality: string, reason: 'no_wood' | 'oc
 }
 
 // Auto-advance turns
-let turnInterval: NodeJS.Timeout | null = null;
+let turnInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startAutoAdvance() {
   const state = useGameStore.getState();

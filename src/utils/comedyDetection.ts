@@ -2,7 +2,7 @@
 import type { Commander, Personality } from '../store/useGameStore';
 
 // Comedy keyword scoring
-const COMEDY_KEYWORDS = {
+const COMEDY_KEYWORDS: Record<Personality, { high: readonly string[]; medium: readonly string[] }> = {
   optimist: {
     high: ['friend', 'tea', 'party', 'welcome', 'invite', 'guest', 'snacks', 'picnic', 'celebration'],
     medium: ['happy', 'joy', 'wonderful', 'lovely', 'nice', 'beautiful', 'fun', 'enjoy'],
@@ -15,7 +15,15 @@ const COMEDY_KEYWORDS = {
     high: ['exactly', 'precisely', 'as instructed', 'specified', 'literal', 'correct'],
     medium: ['one', 'two', 'three', 'accurate', 'per', 'instructions', 'parameters'],
   },
-} as const;
+  ruthless: {
+    high: ['crush', 'destroy', 'dominate', 'annihilate', 'obliterate', 'massacre', 'overwhelming'],
+    medium: ['attack', 'aggressive', 'force', 'power', 'strike', 'assault', 'conquer'],
+  },
+  trickster: {
+    high: ['deceive', 'trick', 'fool', 'outsmart', 'confuse', 'misdirect', 'illusion'],
+    medium: ['clever', 'sneaky', 'cunning', 'surprise', 'unexpected', 'scheme', 'plan'],
+  },
+};
 
 export interface ComedyScore {
   score: number;
@@ -29,17 +37,17 @@ export function calculateComedyScore(interpretation: string, personality: Person
   const lower = interpretation.toLowerCase();
   
   const keywords = COMEDY_KEYWORDS[personality];
-  
+
   // High-value keywords: +10 points each
-  keywords.high.forEach(word => {
+  keywords.high.forEach((word: string) => {
     if (lower.includes(word)) {
       score += 10;
       foundKeywords.push(word);
     }
   });
-  
+
   // Medium-value keywords: +5 points each
-  keywords.medium.forEach(word => {
+  keywords.medium.forEach((word: string) => {
     if (lower.includes(word)) {
       score += 5;
       foundKeywords.push(word);
@@ -254,6 +262,56 @@ const REACTIONS: Record<Personality, ReactionTemplate[]> = {
     {
       condition: (c, _s) => c.secretBuilds.length === 0,
       reaction: "I didn't want to build anything scary. Let's just be friends! 😊",
+    },
+  ],
+
+  ruthless: [
+    {
+      condition: (_c, s) => s.survived && s.enemiesKilled > 15,
+      reaction: (_c, s) => `CRUSHED them! ${s.enemiesKilled} enemies destroyed. Send more! 😈`,
+    },
+    {
+      condition: (_c, s) => s.survived && s.enemiesKilled > 0,
+      reaction: "Victory through overwhelming force. As it should be.",
+    },
+    {
+      condition: (_c, s) => !s.survived,
+      reaction: "They got lucky this time. Next time, I'll use DOUBLE the firepower!",
+    },
+    {
+      condition: (c, _s) => c.secretBuilds.filter(b => b.type === 'tower').length > 5,
+      reaction: "Towers EVERYWHERE. Let them come. They'll regret it.",
+    },
+    {
+      condition: (_c, s) => s.woodRemaining > 10,
+      reaction: (_c, s) => `${s.woodRemaining} wood left unused?! I could have built MORE TOWERS!`,
+    },
+  ],
+
+  trickster: [
+    {
+      condition: (_c, s) => s.survived && s.enemiesKilled > 10,
+      reaction: "They fell for EVERY trap! *chef's kiss* 😏",
+    },
+    {
+      condition: (_c, s) => s.survived,
+      reaction: "Hehe, they never saw it coming! Classic misdirection.",
+    },
+    {
+      condition: (_c, s) => !s.survived,
+      reaction: "Okay so THAT trick didn't work... but wait till you see my NEXT plan! 🎭",
+    },
+    {
+      condition: (c, _s) => c.secretBuilds.filter(b => b.type === 'decoy').length > 3,
+      reaction: "So many decoys! I wonder which ones they fell for first? 😈",
+    },
+    {
+      condition: (c, _s) => c.secretBuilds.filter(b => b.type === 'mine').length > 3,
+      reaction: "Hidden surprises EVERYWHERE. They never know what's real and what's a trap!",
+    },
+    {
+      condition: (_c, s) => s.enemiesKilled === 0,
+      reaction: "My tricks were TOO good! They didn't even dare approach! 😏",
     },
   ],
 };
