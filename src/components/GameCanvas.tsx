@@ -292,6 +292,31 @@ export const GameCanvas = () => {
             buildingSprite.eventMode = 'none';
             buildingSprite.label = `Building-${building.type}`;
 
+            // Scale-in animation with bounce effect (easeOutBack)
+            buildingSprite.scale.set(0); // Start invisible
+            const startTime = Date.now();
+            const duration = 400; // 400ms animation
+            const c1 = 1.70158;
+            const c3 = c1 + 1;
+
+            const animate = () => {
+              const elapsed = Date.now() - startTime;
+              const progress = Math.min(elapsed / duration, 1);
+
+              // easeOutBack formula (overshoot then settle)
+              const eased = 1 + c3 * Math.pow(progress - 1, 3) + c1 * Math.pow(progress - 1, 2);
+
+              buildingSprite.scale.set(eased);
+
+              if (progress < 1) {
+                requestAnimationFrame(animate);
+              } else {
+                buildingSprite.scale.set(1); // Ensure final scale is exactly 1
+              }
+            };
+
+            animate();
+
             graphicsMap.set(key, { display: buildingSprite, type: building.type });
 
             // Queue the sprite to be added during ticker update

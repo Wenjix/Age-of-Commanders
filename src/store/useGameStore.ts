@@ -79,6 +79,9 @@ interface GameState {
   setConcurrencyLimit: (limit: number) => void;
   debriefPanelWidth: number; // 0 = hidden, 60 = collapsed tab, 600 = expanded panel
   setDebriefPanelWidth: (width: number) => void;
+  revealingBuildings: boolean; // Track if reveal animation is in progress
+  setRevealingBuildings: (revealing: boolean) => void;
+  revealBuilding: (x: number, y: number) => void; // Reveal individual building
   resetGame: () => void;
 }
 
@@ -272,6 +275,18 @@ export const useGameStore = create<GameState>((set, get) => ({
   setConcurrencyLimit: (limit) => set({ concurrencyLimit: limit }),
   debriefPanelWidth: 0,
   setDebriefPanelWidth: (width) => set({ debriefPanelWidth: width }),
+  revealingBuildings: false,
+  setRevealingBuildings: (revealing) => set({ revealingBuildings: revealing }),
+
+  revealBuilding: (x, y) => {
+    set((state) => ({
+      buildings: state.buildings.map((b) =>
+        b.position[0] === x && b.position[1] === y
+          ? { ...b, revealed: true }
+          : b
+      ),
+    }));
+  },
 
   resetGame: () => {
     set({
@@ -282,6 +297,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       commanders: initialCommanders,
       phase: 'draft',
       debriefPanelWidth: 0,
+      revealingBuildings: false,
     });
   },
 }));

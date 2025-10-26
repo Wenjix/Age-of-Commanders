@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { BUILDING_COSTS } from '../constants/gameConstants';
 import { getThemeStyles } from '../utils/themeStyles';
@@ -10,27 +10,85 @@ export const DebriefScreen = () => {
   const buildings = useGameStore((state) => state.buildings);
   const wood = useGameStore((state) => state.wood);
   const revealAllBuildings = useGameStore((state) => state.revealAllBuildings);
+  const revealBuilding = useGameStore((state) => state.revealBuilding);
   const uiTheme = useGameStore((state) => state.uiTheme);
   const setDebriefPanelWidth = useGameStore((state) => state.setDebriefPanelWidth);
+  const revealingBuildings = useGameStore((state) => state.revealingBuildings);
+  const setRevealingBuildings = useGameStore((state) => state.setRevealingBuildings);
 
   const resetGame = useGameStore((state) => state.resetGame);
 
   const [revealed, setRevealed] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Track timeout IDs for cleanup
+  const timeoutIdsRef = useRef<number[]>([]);
+
+  // Helper to clear all pending timeouts
+  const clearAllRevealTimeouts = () => {
+    timeoutIdsRef.current.forEach((id) => clearTimeout(id));
+    timeoutIdsRef.current = [];
+  };
+
+  // Explicit commander ordering for consistent reveal sequence
+  const COMMANDER_REVEAL_ORDER = ['larry', 'paul', 'olivia'];
+
   useEffect(() => {
     if (phase === 'debrief' && !revealed) {
-      // Show collapsed tab initially
-      setDebriefPanelWidth(60);
+      setDebriefPanelWidth(0); // Hide panel during reveal
       setIsExpanded(false);
-      // Trigger reveal animation
-      setTimeout(() => {
-        revealAllBuildings();
+      setRevealingBuildings(true);
+
+      // Get all unrevealed buildings
+      const unrevealedBuildings = buildings.filter((b) => !b.revealed);
+
+      // Sort commanders explicitly by reveal order
+      const sortedCommanders = COMMANDER_REVEAL_ORDER
+        .map((id) => commanders.find((c) => c.id === id))
+        .filter((c): c is typeof commanders[0] => c !== undefined);
+
+      // Group buildings by sorted commander order
+      const buildingsByCommander = sortedCommanders.map((commander) => ({
+        commander,
+        buildings: unrevealedBuildings.filter((b) => b.ownerId === commander.id),
+      }));
+
+      // Stagger reveal: 500ms initial, 600ms between buildings
+      let currentDelay = 500;
+      const REVEAL_INTERVAL = 600;
+
+      // Single toast at start (no per-building spam)
+      const revealToastId = 'revealing-builds';
+      toast.loading('Revealing builds...', { id: revealToastId });
+
+      buildingsByCommander.forEach(({ buildings: commanderBuildings }) => {
+        commanderBuildings.forEach((building) => {
+          const timeoutId = window.setTimeout(() => {
+            // Reveal individual building
+            revealBuilding(building.position[0], building.position[1]);
+          }, currentDelay);
+
+          timeoutIdsRef.current.push(timeoutId);
+          currentDelay += REVEAL_INTERVAL;
+        });
+      });
+
+      // After all reveals, show debrief panel
+      const finalTimeoutId = window.setTimeout(() => {
         setRevealed(true);
-        toast.success('All buildings revealed!', { duration: 2000 });
-      }, 500);
+        setRevealingBuildings(false);
+        setDebriefPanelWidth(60); // Show collapsed tab
+        toast.success('All buildings revealed!', { id: revealToastId, duration: 2000 });
+      }, currentDelay + 500);
+
+      timeoutIdsRef.current.push(finalTimeoutId);
     }
-  }, [phase, revealed, revealAllBuildings, setDebriefPanelWidth]);
+
+    // Cleanup function to prevent memory leaks
+    return () => {
+      clearAllRevealTimeouts();
+    };
+  }, [phase, revealed, buildings, commanders, setDebriefPanelWidth, setRevealingBuildings, revealBuilding]);
 
   // Reset revealed state and panel when leaving debrief
   useEffect(() => {
@@ -38,6 +96,7 @@ export const DebriefScreen = () => {
       setRevealed(false);
       setIsExpanded(false);
       setDebriefPanelWidth(0);
+      clearAllRevealTimeouts(); // Cancel pending reveals on phase change
     }
   }, [phase, setDebriefPanelWidth]);
 
@@ -94,11 +153,32 @@ export const DebriefScreen = () => {
     setIsExpanded(!isExpanded);
   };
 
+  const handleSkipReveal = () => {
+    clearAllRevealTimeouts();
+    revealAllBuildings();
+    setRevealed(true);
+    setRevealingBuildings(false);
+    setDebriefPanelWidth(60);
+    toast.success('All buildings revealed!', { duration: 1000 });
+  };
+
   const theme = getThemeStyles(uiTheme);
 
   // Collapsed tab view
   if (!isExpanded) {
     return (
+      <>
+        {/* Skip button (only shown during reveal animation) */}
+        {revealingBuildings && (
+          <button
+            onClick={handleSkipReveal}
+            className="fixed top-20 right-4 z-[100] bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors"
+          >
+            ⏩ Skip Reveal
+          </button>
+        )}
+
+        {/* Collapsed tab */}
       <div
         className={`fixed left-0 top-[44px] h-[calc(100vh-44px)] w-[60px] z-[90] flex items-center justify-center cursor-pointer transition-all duration-300 ${theme.cardBorder}`}
         style={{
@@ -122,12 +202,24 @@ export const DebriefScreen = () => {
           <span className="text-xl">▶</span>
         </div>
       </div>
+      </>
     );
   }
 
   // Expanded panel view
   return (
-    <div
+    <>
+      {/* Skip button (only shown during reveal animation) */}
+      {revealingBuildings && (
+        <button
+          onClick={handleSkipReveal}
+          className="fixed top-20 right-4 z-[100] bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors"
+        >
+          ⏩ Skip Reveal
+        </button>
+      )}
+
+      <div
       className={`fixed left-0 top-[44px] h-[calc(100vh-44px)] w-[600px] z-[90] flex flex-col transition-all duration-300 ${theme.cardBorder} ${theme.overlayBackdrop}`}
       style={{
         backgroundColor: 'rgba(0, 0, 0, 0.85)',
@@ -256,6 +348,7 @@ export const DebriefScreen = () => {
         </button>
       </div>
     </div>
+    </>
   );
 };
 
