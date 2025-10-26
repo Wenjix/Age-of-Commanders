@@ -212,7 +212,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // Turn system initial state
   currentTurn: 0,
-  maxTurns: 24, // CHANGED: 24 turns for 3-act system
+  maxTurns: 30, // CHANGED: 30 turns for extended Act 3
   isPaused: false,
   turnSpeed: 2000,
   turnLog: [],

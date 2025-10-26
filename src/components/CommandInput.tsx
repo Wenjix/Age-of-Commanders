@@ -17,9 +17,6 @@ export const CommandInput = () => {
   const updateCommanderInterpretation = useGameStore(
     (state) => state.updateCommanderInterpretation
   );
-  const updateCommanderSecretBuilds = useGameStore(
-    (state) => state.updateCommanderSecretBuilds
-  );
   const apiKey = useGameStore((state) => state.apiKey);
 
   if (phase !== 'teach') return null;
@@ -79,9 +76,13 @@ export const CommandInput = () => {
         buildings
       );
 
-      // Update each commander's secret builds
+      // Update each commander's Act 1 builds
       buildPlans.forEach((plan, commanderId) => {
-        updateCommanderSecretBuilds(commanderId, plan);
+        useGameStore.setState((state) => ({
+          commanders: state.commanders.map(c =>
+            c.id === commanderId ? { ...c, act1Builds: plan } : c
+          ),
+        }));
       });
 
       toast.success('Build plans ready! Starting execution...', { id: 'planning' });
@@ -114,7 +115,11 @@ export const CommandInput = () => {
       );
 
       buildPlans.forEach((plan, commanderId) => {
-        updateCommanderSecretBuilds(commanderId, plan);
+        useGameStore.setState((state) => ({
+          commanders: state.commanders.map(c =>
+            c.id === commanderId ? { ...c, act1Builds: plan } : c
+          ),
+        }));
       });
 
       setTimeout(() => {

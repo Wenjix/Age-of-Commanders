@@ -20,11 +20,12 @@ export const ExecutionHUD: React.FC = () => {
   const pauseGame = useGameStore((state) => state.pauseGame);
   const resumeGame = useGameStore((state) => state.resumeGame);
   const setPhase = useGameStore((state) => state.setPhase);
+  const isIntermission = useGameStore((state) => state.isIntermission);
 
   // Keyboard controls
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (phase !== 'execute') return;
+      if (phase !== 'execute' || isIntermission) return;
 
       if (e.code === 'Space') {
         e.preventDefault();
@@ -40,7 +41,7 @@ export const ExecutionHUD: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [phase, isPaused, pauseGame, resumeGame]);
+  }, [phase, isPaused, isIntermission, pauseGame, resumeGame]);
 
   // Start auto-advance when execution phase begins
   useEffect(() => {

@@ -120,7 +120,7 @@ export async function processTurn(): Promise<TurnResult> {
       turn: currentTurn,
       type: 'victory',
       description: result.victory
-        ? `Survived all 24 turns! Strategic Victory!`
+        ? `Survived all 30 turns! Strategic Victory!`
         : `Defeat on turn ${currentTurn}`,
       impact: 'high',
       emoji: result.victory ? '🏆' : '💀',

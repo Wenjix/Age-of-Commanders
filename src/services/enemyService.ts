@@ -18,7 +18,8 @@ const ENEMY_LABELS = [
 const ACT_SPAWN_SCHEDULES = {
   1: { turns: [1, 3, 5, 7], distribution: [2, 2, 1, 1] },      // 6 total
   2: { turns: [9, 11, 13, 15], distribution: [3, 3, 3, 3] },   // 12 total
-  3: { turns: [17, 18, 19, 20, 21, 22, 23], distribution: [3, 3, 2, 3, 2, 3, 2] }, // 18 total
+  3: { turns: [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
+       distribution: [2, 2, 3, 3, 2, 3, 3, 3, 3, 2, 3, 3, 3, 3] }, // 38 total
 };
 
 export interface EnemyTurnResult {

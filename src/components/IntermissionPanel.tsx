@@ -23,8 +23,8 @@ export const IntermissionPanel = () => {
   const currentAct = useGameStore((state) => state.currentAct);
   const updateCommanderInterpretation = useGameStore((state) => state.updateCommanderInterpretation);
 
-  const bonus = currentAct === 1 ? act1Bonus : act2Bonus;
-  const nextAct = currentAct + 1;
+  const bonus = currentTurn === 8 ? act1Bonus : act2Bonus;
+  const nextAct = currentTurn === 8 ? 2 : 3;
 
   const handleSubmit = async () => {
     // Prevent empty submissions
