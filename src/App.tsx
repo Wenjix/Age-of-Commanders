@@ -8,6 +8,7 @@ import { ExecutionController } from './components/ExecutionController';
 import { ExecutionHUD } from './components/ExecutionHUD';
 import { ExecutionScreen } from './components/ExecutionScreen';
 import { BuildingCuration } from './components/BuildingCuration';
+import { BuildingCodex } from './components/BuildingCodex';
 import { DebriefScreen } from './components/DebriefScreen';
 import { CommanderIntroduction } from './components/CommanderIntroduction';
 
@@ -30,6 +31,7 @@ function App() {
       <ExecutionScreen />
       <ExecutionController />
       <ExecutionHUD />
+      <BuildingCodex />
       <TopBar />
       <PhaseIndicator />
       <div className="flex-1 overflow-hidden">

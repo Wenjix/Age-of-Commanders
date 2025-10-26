@@ -14,7 +14,8 @@ export const IntermissionPanel = () => {
   const [command, setCommand] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const currentTurn = useGameStore((state) => state.currentTurn);
+  // CRITICAL: Capture currentTurn on mount so it doesn't change when resumeFromIntermission() increments it
+  const [currentTurn] = useState(() => useGameStore.getState().currentTurn);
   const wood = useGameStore((state) => state.wood);
   const act1Bonus = useGameStore((state) => state.act1Bonus);
   const act2Bonus = useGameStore((state) => state.act2Bonus);
@@ -23,7 +24,8 @@ export const IntermissionPanel = () => {
   const enemiesKilledPerAct = useGameStore((state) => state.enemiesKilledPerAct);
   const updateCommanderInterpretation = useGameStore((state) => state.updateCommanderInterpretation);
 
-  // Determine which act just completed and which is next based on turn number
+  // Determine which act just completed based on turn number
+  // Intermission triggers AFTER turn 8 (end of Act 1) and AFTER turn 16 (end of Act 2)
   // Act 1: turns 1-8, Act 2: turns 9-16, Act 3: turns 17-30
   let completedAct: 1 | 2 | 3;
   if (currentTurn <= 8) {

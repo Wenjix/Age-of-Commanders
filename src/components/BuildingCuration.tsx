@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGameStore, type BuildingType } from '../store/useGameStore';
 import { BUILDING_COSTS, BUILDING_CARDS } from '../constants/gameConstants';
 import { getThemeStyles } from '../utils/themeStyles';
+import { BuildingTilePreview } from './BuildingTilePreview';
 import toast from 'react-hot-toast';
 
 const ALL_BUILDINGS: BuildingType[] = ['wall', 'tower', 'decoy', 'mine', 'farm'];
@@ -91,9 +92,14 @@ export const BuildingCuration = () => {
                     🪵 {cost}
                   </div>
 
-                  {/* Icon */}
-                  <div className="text-6xl mb-4 mt-8 text-center">
-                    {cardInfo.icon}
+                  {/* Icon and Tile Preview */}
+                  <div className="flex items-center justify-center gap-4 mb-4 mt-8">
+                    <div className="text-6xl">
+                      {cardInfo.icon}
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <BuildingTilePreview type={building} size="large" />
+                    </div>
                   </div>
 
                   {/* Building Name */}
