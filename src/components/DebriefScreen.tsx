@@ -172,7 +172,7 @@ export const DebriefScreen = () => {
   };
 
   return (
-    <div className="debrief-screen">
+    <div className="debrief-screen" style={{ height: '100vh', overflow: 'auto', background: '#0f172a' }}>
       {/* Hero Banner */}
       <HeroBanner
         outcome={outcome}
@@ -184,7 +184,7 @@ export const DebriefScreen = () => {
       />
 
       {/* Main Content */}
-      <div className="debrief-content">
+      <div className="debrief-content" style={{ paddingBottom: '100px' }}>
         {/* Highlight Badges (Sticky) */}
         <HighlightBadges highlights={highlightBadgesData} />
 
@@ -202,8 +202,8 @@ export const DebriefScreen = () => {
         )}
 
         {/* Commander Breakdown */}
-        <div style={{ padding: '2rem' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: '800', color: 'white', marginBottom: '2rem', textAlign: 'center' }}>
+        <div style={{ padding: '2rem', background: 'transparent' }}>
+          <h2 style={{ fontSize: '2rem', fontWeight: '800', color: 'white', marginBottom: '2rem', textAlign: 'center', position: 'relative', zIndex: 1 }}>
             👥 Commander Reports
           </h2>
           {buildingsByCommander.map(({ commander, buildings: commanderBuildings }, index) => {
