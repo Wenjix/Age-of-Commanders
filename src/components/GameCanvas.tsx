@@ -43,9 +43,15 @@ export const GameCanvas = () => {
   const renderQueueRef = useRef<BuildingQueueItem[]>([]);
   const tickerHandlerRef = useRef<(() => void) | null>(null);
 
-  // State for hover tooltip
+  // State for hover tooltips
   const [hoveredBuilding, setHoveredBuilding] = useState<{
     type: BuildingType;
+    mouseX: number;
+    mouseY: number;
+  } | null>(null);
+
+  const [hoveredEnemy, setHoveredEnemy] = useState<{
+    label: string;
     mouseX: number;
     mouseY: number;
   } | null>(null);
@@ -408,19 +414,6 @@ export const GameCanvas = () => {
               .circle(TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE * 0.35)
               .fill({ color: enemy.markedForDeath ? 0x800000 : 0xFF0000 });
 
-            // Create enemy label
-            const label = new Text({
-              text: enemy.label,
-              style: {
-                fontSize: 10,
-                fill: 0xFFFFFF,
-                fontFamily: 'Arial',
-                stroke: { color: 0x000000, width: 2 }
-              }
-            });
-            label.anchor.set(0.5, 1);
-            label.position.set(TILE_SIZE / 2, -2);
-
             // Add health indicator if damaged
             if (enemy.markedForDeath) {
               const skull = new Text({
@@ -433,10 +426,24 @@ export const GameCanvas = () => {
             }
 
             enemyContainer.addChild(enemyBody);
-            enemyContainer.addChild(label);
             enemyContainer.position.set(enemy.position[0] * TILE_SIZE, enemy.position[1] * TILE_SIZE);
             enemyContainer.zIndex = Z_LAYERS.ENEMIES;
             enemyContainer.label = `Enemy-${enemy.id}`;
+            enemyContainer.eventMode = 'static';
+            enemyContainer.cursor = 'pointer';
+
+            // Add hover event listeners
+            enemyContainer.on('pointerenter', (event) => {
+              setHoveredEnemy({
+                label: enemy.label,
+                mouseX: event.global.x,
+                mouseY: event.global.y,
+              });
+            });
+
+            enemyContainer.on('pointerleave', () => {
+              setHoveredEnemy(null);
+            });
 
             // Queue the container to be added during ticker update
             renderQueueRef.current.push({
@@ -693,6 +700,24 @@ export const GameCanvas = () => {
                 "{BUILDING_CARDS[hoveredBuilding.type].commanderQuotes.olivia}"
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enemy Hover Tooltip */}
+      {hoveredEnemy && (
+        <div
+          className={`fixed px-4 py-2 rounded-lg ${theme.cardBackground} ${theme.cardBorder} shadow-xl z-50 pointer-events-none`}
+          style={{
+            left: `${hoveredEnemy.mouseX + 20}px`,
+            top: `${hoveredEnemy.mouseY + 20}px`,
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">👹</span>
+            <p className={`text-sm font-semibold ${theme.bodyText}`}>
+              {hoveredEnemy.label}
+            </p>
           </div>
         </div>
       )}
