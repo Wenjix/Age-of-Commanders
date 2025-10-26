@@ -15,6 +15,12 @@ dist-ssr
 # Archive folder
 archive
 
+# AI assistant folders
+.trae
+.claude
+.serena
+.playwright-mcp
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
