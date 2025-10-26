@@ -15,11 +15,29 @@ export const Z_LAYERS = {
 
 // Building Costs
 export const BUILDING_COSTS: Record<BuildingType, number> = {
-  wall: 5,
-  tower: 10,
-  decoy: 3,
-  mine: 7,
-  farm: 8,
+  wall: 4,
+  tower: 8,
+  decoy: 5,
+  mine: 6,
+  farm: 10,
+};
+
+// Building Dimensions (width × height in tiles)
+export const BUILDING_DIMENSIONS: Record<BuildingType, { width: number; height: number }> = {
+  wall: { width: 3, height: 1 },  // 3×1 horizontal
+  tower: { width: 1, height: 1 },
+  decoy: { width: 1, height: 1 },
+  mine: { width: 1, height: 1 },
+  farm: { width: 1, height: 2 },  // 1×2 vertical
+};
+
+// Building Blocking Behavior (whether building blocks enemy movement)
+export const BUILDING_BLOCKS_MOVEMENT: Record<BuildingType, boolean> = {
+  wall: true,
+  tower: true,
+  decoy: false,  // Decoy doesn't block - enemies pass through
+  mine: true,
+  farm: true,
 };
 
 // Building Descriptions (Old - kept for reference)
@@ -179,5 +197,40 @@ export interface BuildingQueueItem {
   action: 'add' | 'remove';
   sprite?: import('pixi.js').Sprite | import('pixi.js').Container;
   key?: string;
+}
+
+/**
+ * Get all tiles occupied by a building based on its type and position.
+ * Position (x, y) represents the top-left tile of the building's footprint.
+ *
+ * @param type - Building type
+ * @param x - X coordinate (top-left tile)
+ * @param y - Y coordinate (top-left tile)
+ * @returns Array of [x, y] coordinates for all tiles in the footprint
+ */
+export function getFootprint(type: BuildingType, x: number, y: number): [number, number][] {
+  const { width, height } = BUILDING_DIMENSIONS[type];
+  const footprint: [number, number][] = [];
+
+  for (let dx = 0; dx < width; dx++) {
+    for (let dy = 0; dy < height; dy++) {
+      footprint.push([x + dx, y + dy]);
+    }
+  }
+
+  return footprint;
+}
+
+/**
+ * Check if a building's footprint fits within the grid boundaries.
+ *
+ * @param type - Building type
+ * @param x - X coordinate (top-left tile)
+ * @param y - Y coordinate (top-left tile)
+ * @returns True if the entire footprint is within grid bounds
+ */
+export function isFootprintOnGrid(type: BuildingType, x: number, y: number): boolean {
+  const { width, height } = BUILDING_DIMENSIONS[type];
+  return x >= 0 && y >= 0 && x + width <= GRID_SIZE && y + height <= GRID_SIZE;
 }
 

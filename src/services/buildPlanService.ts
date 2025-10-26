@@ -1,5 +1,5 @@
 import type { BuildingType, Commander, Building } from '../store/useGameStore';
-import { BUILDING_COSTS } from '../constants/gameConstants';
+import { BUILDING_COSTS, getFootprint, isFootprintOnGrid } from '../constants/gameConstants';
 
 const GRID_SIZE = 26;
 
@@ -105,7 +105,7 @@ function chooseBuildingTypes(
       }
       break;
 
-    case 'paranoid':
+    case 'paranoid': {
       // Prioritize defensive buildings (walls, towers, mines)
       const defensive = enabledBuildings.filter((b) =>
         ['wall', 'tower', 'mine'].includes(b)
@@ -119,8 +119,9 @@ function chooseBuildingTypes(
         }
       }
       break;
+    }
 
-    case 'optimist':
+    case 'optimist': {
       // Prioritize decorative/friendly buildings (farm, decoy)
       const friendly = enabledBuildings.filter((b) => ['farm', 'decoy'].includes(b));
       const fallbackOpt = enabledBuildings;
@@ -132,6 +133,7 @@ function chooseBuildingTypes(
         }
       }
       break;
+    }
 
     default:
       for (let i = 0; i < count; i++) {
@@ -161,8 +163,11 @@ function isTileOccupied(
     return true;
   }
 
-  // Check existing buildings
-  return existingBuildings.some((b) => b.position[0] === x && b.position[1] === y);
+  // Check if any building's footprint overlaps with this tile
+  return existingBuildings.some((b) => {
+    const footprint = getFootprint(b.type, b.position[0], b.position[1]);
+    return footprint.some(([fx, fy]) => fx === x && fy === y);
+  });
 }
 
 /**
@@ -204,8 +209,19 @@ export function generateSecretBuildPlan(config: BuildPlanConfig): Building[] {
       continue;
     }
 
-    // Check if tile is occupied
-    if (isTileOccupied(position[0], position[1], basePosition, [...existingBuildings, ...builds])) {
+    // Check if footprint is on grid
+    if (!isFootprintOnGrid(building, position[0], position[1])) {
+      continue;
+    }
+
+    // Check if all tiles in footprint are free
+    const footprint = getFootprint(building, position[0], position[1]);
+    const allBuildingsSoFar = [...existingBuildings, ...builds];
+    const isBlocked = footprint.some(([fx, fy]) =>
+      isTileOccupied(fx, fy, basePosition, allBuildingsSoFar)
+    );
+
+    if (isBlocked) {
       continue;
     }
 

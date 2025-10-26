@@ -166,10 +166,31 @@ export const GameCanvas = () => {
 
         const { fill, stroke } = getStyleForType(type);
         const graphic = new Graphics();
-        graphic
-          .rect(0, 0, TILE_SIZE, TILE_SIZE)
-          .fill({ color: fill })
-          .stroke({ width: 1, color: stroke });
+
+        // Draw based on building type
+        if (type === 'wall') {
+          // Wall: 3 connected gray rectangles (96×32)
+          for (let i = 0; i < 3; i++) {
+            graphic
+              .rect(i * TILE_SIZE, 0, TILE_SIZE, TILE_SIZE)
+              .fill({ color: fill })
+              .stroke({ width: 1, color: stroke });
+          }
+        } else if (type === 'farm') {
+          // Farm: 2 stacked green rectangles (32×64)
+          for (let i = 0; i < 2; i++) {
+            graphic
+              .rect(0, i * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+              .fill({ color: fill })
+              .stroke({ width: 1, color: stroke });
+          }
+        } else {
+          // Standard 1×1 buildings
+          graphic
+            .rect(0, 0, TILE_SIZE, TILE_SIZE)
+            .fill({ color: fill })
+            .stroke({ width: 1, color: stroke });
+        }
 
         const texture = app!.renderer.generateTexture(graphic);
         textureCache.set(type, texture);

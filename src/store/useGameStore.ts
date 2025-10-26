@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { TurnLogEntry, CommanderThought } from '../types/turnLog';
+import { getFootprint, isFootprintOnGrid } from '../constants/gameConstants';
 
 export type Personality = 'literalist' | 'paranoid' | 'optimist';
 export type GamePhase = 'draft' | 'curate' | 'teach' | 'execute' | 'debrief';
@@ -272,11 +273,20 @@ export const useGameStore = create<GameState>((set, get) => ({
   placeBuilding: (building) => {
     const state = get();
     const [x, y] = building.position;
-    
-    if (state.isTileOccupied(x, y)) {
+
+    // Check if footprint is on grid
+    if (!isFootprintOnGrid(building.type, x, y)) {
       return false;
     }
-    
+
+    // Check if any tile in the footprint is occupied
+    const footprint = getFootprint(building.type, x, y);
+    const isBlocked = footprint.some(([fx, fy]) => state.isTileOccupied(fx, fy));
+
+    if (isBlocked) {
+      return false;
+    }
+
     set((state) => ({
       buildings: [...state.buildings, building],
     }));
@@ -309,7 +319,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   isTileOccupied: (x, y) => {
     const state = get();
     const { basePosition, buildings } = state;
-    
+
     // Check if it's the base (2x2)
     if (
       x >= basePosition.x &&
@@ -319,9 +329,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     ) {
       return true;
     }
-    
-    // Check if there's a building
-    return buildings.some((b) => b.position[0] === x && b.position[1] === y);
+
+    // Check if any building's footprint overlaps with this tile
+    return buildings.some((b) => {
+      const footprint = getFootprint(b.type, b.position[0], b.position[1]);
+      return footprint.some(([fx, fy]) => fx === x && fy === y);
+    });
   },
   
   deductWood: (amount) => {
