@@ -39,6 +39,9 @@ export const CommandInput = () => {
 
     setIsProcessing(true);
     
+    // Save command for debrief screen
+    localStorage.setItem('lastCommand', command.trim());
+    
     try {
       // Show personality-based loading messages
       commanders.forEach((commander) => {

@@ -1,28 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { BUILDING_COSTS } from '../constants/gameConstants';
 import { getThemeStyles } from '../utils/themeStyles';
-import {
-  generateReaction,
-  generateHighlights,
-  calculateAbsurdityPercentage,
-  type GameStats,
-} from '../utils/comedyDetection';
 import toast from 'react-hot-toast';
-
-const BUILDING_ICONS: Record<string, string> = {
-  wall: '🧱',
-  tower: '🗼',
-  mine: '💣',
-  decoy: '🎯',
-  farm: '🌾',
-};
-
-const PERSONALITY_EMOJIS = {
-  literalist: '😐',
-  paranoid: '😰',
-  optimist: '😊',
-};
 
 export const DebriefScreen = () => {
   const phase = useGameStore((state) => state.phase);
@@ -52,9 +32,6 @@ export const DebriefScreen = () => {
 
   // Explicit commander ordering for consistent reveal sequence
   const COMMANDER_REVEAL_ORDER = ['larry', 'paul', 'olivia'];
-
-  // Get last command from localStorage
-  const lastCommand = localStorage.getItem('lastCommand') || 'Defend the base';
 
   useEffect(() => {
     if (phase === 'debrief' && !revealed) {
@@ -137,19 +114,7 @@ export const DebriefScreen = () => {
   const totalWoodUsed = buildings.reduce((sum, b) => sum + BUILDING_COSTS[b.type], 0);
   const woodRemaining = wood;
 
-  // Game stats for comedy detection
-  const stats: GameStats = {
-    survived: true, // TODO: Implement actual survival logic
-    woodRemaining,
-    totalBuildings,
-    enemiesKilled: 0, // TODO: Implement enemy tracking
-    buildingsByType: buildings.reduce((acc, b) => {
-      acc[b.type] = (acc[b.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>),
-  };
-
-  // Group buildings by commander with comedy analysis
+  // Group buildings by commander
   const buildingsByCommander = commanders.map((commander) => {
     const commanderBuildings = buildings.filter((b) => b.ownerId === commander.id);
     const woodUsed = commanderBuildings.reduce((sum, b) => sum + BUILDING_COSTS[b.type], 0);
@@ -160,24 +125,25 @@ export const DebriefScreen = () => {
       buildingCounts[b.type] = (buildingCounts[b.type] || 0) + 1;
     });
 
-    // Generate post-mission reaction
-    const reaction = generateReaction(commander, stats);
-    
-    // Calculate absurdity
-    const absurdityPercent = calculateAbsurdityPercentage(commander, lastCommand);
-
     return {
       commander,
       buildings: commanderBuildings,
       woodUsed,
       buildingCounts,
-      reaction,
-      absurdityPercent,
     };
   });
 
-  // Generate highlights
-  const highlights = generateHighlights(commanders, lastCommand, stats);
+  // Find most absurd build
+  const absurdBuilds = [
+    ...buildings.filter((b) => b.type === 'farm').map((b) => ({
+      text: `${commanders.find((c) => c.id === b.ownerId)?.name} built a Farm (it does nothing)`,
+      absurdity: 3,
+    })),
+    ...buildings.filter((b) => b.type === 'decoy').map((b) => ({
+      text: `${commanders.find((c) => c.id === b.ownerId)?.name} placed a Decoy`,
+      absurdity: 2,
+    })),
+  ].sort((a, b) => b.absurdity - a.absurdity);
 
   const handlePlayAgain = () => {
     resetGame();
@@ -279,11 +245,9 @@ export const DebriefScreen = () => {
 
       {/* Content - Scrollable */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Command Reminder */}
-        <div className={`${theme.buildingCardBackground} ${theme.cardBorder} rounded-lg p-4`}>
-          <p className={`${theme.mutedText} text-sm mb-1`}>You said:</p>
-          <p className={`${theme.headingText} text-lg font-bold`}>"{lastCommand}"</p>
-        </div>
+        <p className={`${theme.bodyText} text-sm`}>
+          The wave is over! Here's what your commanders built...
+        </p>
 
         {/* Overall Statistics */}
         <div className={`${theme.buildingCardBackground} ${theme.cardBorder} rounded-lg p-4`}>
@@ -304,10 +268,10 @@ export const DebriefScreen = () => {
           </div>
         </div>
 
-        {/* Commander Breakdown with Reactions */}
+        {/* Commander Breakdown */}
         <div className="space-y-3">
           <h3 className={`${theme.headingText} text-lg font-bold`}>👥 Commander Breakdown</h3>
-          {buildingsByCommander.map(({ commander, buildings, woodUsed, buildingCounts, reaction, absurdityPercent }) => (
+          {buildingsByCommander.map(({ commander, buildings, woodUsed, buildingCounts }) => (
             <div
               key={commander.id}
               className={`${theme.cardBackground} border-2 rounded-lg p-3`}
@@ -316,122 +280,52 @@ export const DebriefScreen = () => {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
                     style={{ backgroundColor: commander.colors.bg }}
                   >
                     {commander.name[0]}
                   </div>
                   <div>
-                    <p className={`${theme.headingText} font-bold`}>{commander.name}</p>
+                    <p className={`${theme.headingText} font-bold text-sm`}>{commander.name}</p>
                     <p className={`${theme.mutedText} text-xs capitalize`}>{commander.personality}</p>
                   </div>
                 </div>
-                <div className="text-3xl">
-                  {PERSONALITY_EMOJIS[commander.personality]}
+                <div className="text-right">
+                  <p className={`${theme.mutedText} text-xs`}>Wood</p>
+                  <p className={`${theme.headingText} text-lg font-bold`}>{woodUsed}</p>
                 </div>
               </div>
-
-              {/* Interpretation */}
               <div className={`${theme.secondaryButtonBackground} rounded p-2 mb-2`}>
-                <p className={`${theme.mutedText} text-xs mb-1`}>They heard:</p>
                 <p className={`${theme.bodyText} text-xs italic`}>"{commander.interpretation}"</p>
               </div>
-
-              {/* Buildings */}
-              <div className="mb-2">
-                <p className={`${theme.mutedText} text-xs mb-1`}>What they built ({woodUsed} wood):</p>
-                <div className="flex flex-wrap gap-1">
-                  {Object.entries(buildingCounts).map(([type, count]) => (
-                    <span
-                      key={type}
-                      className={`${theme.secondaryButtonBackground} ${theme.headingText} px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1`}
-                    >
-                      <span>{BUILDING_ICONS[type]}</span>
-                      <span>{count}x {type}</span>
-                    </span>
-                  ))}
-                  {buildings.length === 0 && (
-                    <span className={`${theme.mutedText} text-xs italic`}>Nothing (stood by)</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Post-Mission Reaction */}
-              <div
-                className="p-2 rounded mb-2"
-                style={{
-                  backgroundColor: `${commander.colors.bg}20`,
-                  border: `1px solid ${commander.colors.border}`,
-                }}
-              >
-                <p className={`${theme.mutedText} text-xs mb-1`}>Reaction:</p>
-                <p className={`${theme.bodyText} text-sm font-medium`}>💬 {reaction}</p>
-              </div>
-
-              {/* Absurdity Meter */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`${theme.mutedText} text-xs`}>Absurdity Level:</span>
-                  <span className={`${theme.headingText} text-sm font-bold`}>{absurdityPercent}%</span>
-                </div>
-                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full transition-all duration-1000 ease-out"
-                    style={{
-                      width: `${absurdityPercent}%`,
-                      background: absurdityPercent > 70 
-                        ? 'linear-gradient(90deg, #ef4444, #dc2626)' 
-                        : absurdityPercent > 40
-                        ? 'linear-gradient(90deg, #f59e0b, #d97706)'
-                        : 'linear-gradient(90deg, #10b981, #059669)',
-                    }}
-                  />
-                </div>
+              <div className="flex flex-wrap gap-1">
+                {Object.entries(buildingCounts).map(([type, count]) => (
+                  <span
+                    key={type}
+                    className={`${theme.secondaryButtonBackground} ${theme.headingText} px-2 py-1 rounded-full text-xs font-semibold`}
+                  >
+                    {count}x {type}
+                  </span>
+                ))}
+                {buildings.length === 0 && (
+                  <span className={`${theme.mutedText} text-xs italic`}>No buildings constructed</span>
+                )}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Highlight Reel */}
-        {highlights.length > 0 && (
+        {/* Absurd Moments */}
+        {absurdBuilds.length > 0 && (
           <div className={`${theme.buildingCardBackground} ${theme.cardBorder} rounded-lg p-4`}>
-            <h3 className={`${theme.headingText} text-lg font-bold mb-3`}>🏆 Highlight Reel</h3>
-            <div className="space-y-2">
-              {highlights.map((highlight, index) => (
-                <div
-                  key={index}
-                  className={`p-3 rounded ${theme.secondaryButtonBackground}`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl">{highlight.emoji}</span>
-                    <span className={`${theme.headingText} font-bold text-sm`}>
-                      {highlight.category}
-                    </span>
-                  </div>
-                  <p className={`${theme.mutedText} text-xs mb-1`}>{highlight.commanderName}</p>
-                  <p className={`${theme.bodyText} text-sm`}>{highlight.description}</p>
-                </div>
+            <h3 className={`${theme.headingText} text-lg font-bold mb-2`}>😂 Highlight Reel</h3>
+            <ul className="space-y-1">
+              {absurdBuilds.slice(0, 3).map((build, index) => (
+                <li key={index} className={`${theme.bodyText} text-sm`}>
+                  • {build.text}
+                </li>
               ))}
-            </div>
-
-            {/* Quote of the Day */}
-            {highlights.find(h => h.category === 'Quote of the Day') && (
-              <div
-                className="mt-3 p-4 rounded-lg text-center border-2"
-                style={{ 
-                  borderColor: '#fbbf24',
-                  backgroundColor: 'rgba(251, 191, 36, 0.1)',
-                }}
-              >
-                <div className="text-lg mb-2">✨ QUOTE OF THE DAY ✨</div>
-                <div className={`text-base italic ${theme.headingText} mb-1`}>
-                  "{highlights.find(h => h.category === 'Quote of the Day')?.description}"
-                </div>
-                <div className={`text-xs ${theme.mutedText}`}>
-                  - {highlights.find(h => h.category === 'Quote of the Day')?.commanderName}
-                </div>
-              </div>
-            )}
+            </ul>
           </div>
         )}
       </div>
