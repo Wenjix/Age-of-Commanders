@@ -1,3 +1,4 @@
+import React from 'react';
 import type { BuildingType } from '../store/useGameStore';
 import { BUILDING_DIMENSIONS, BUILDING_STYLES } from '../constants/gameConstants';
 
