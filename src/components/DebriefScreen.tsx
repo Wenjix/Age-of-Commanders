@@ -320,12 +320,12 @@ export const DebriefScreen = () => {
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg"
-                    style={{ backgroundColor: commander.colors.bg }}
-                  >
-                    {commander.name[0]}
-                  </div>
+                  <img
+                    src={commander.avatarImage}
+                    alt={`${commander.name} portrait`}
+                    className="w-10 h-10 rounded-full object-cover border-2"
+                    style={{ borderColor: commander.colors.border }}
+                  />
                   <div>
                     <p className={`${theme.headingText} font-bold`}>{commander.name}</p>
                     <p className={`${theme.mutedText} text-xs capitalize`}>{commander.personality}</p>

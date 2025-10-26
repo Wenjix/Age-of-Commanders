@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { TurnLogEntry, CommanderThought } from '../types/turnLog';
 import { getFootprint, isFootprintOnGrid } from '../constants/gameConstants';
 
-export type Personality = 'literalist' | 'paranoid' | 'optimist';
+export type Personality = 'literalist' | 'paranoid' | 'optimist' | 'ruthless' | 'trickster';
 export type GamePhase = 'draft' | 'curate' | 'teach' | 'execute' | 'debrief';
 export type UITheme = 'dark-blur' | 'frosted-glass';
 
@@ -42,6 +42,7 @@ export interface Commander {
   personality: Personality;
   interpretation: string;
   colors: CommanderColors;
+  avatarImage: string; // Path to commander portrait image
   executionPlan: Action[];
   secretBuilds: Building[]; // Hidden until reveal - KEEP for backward compatibility
   currentActionIndex: number; // KEEP for backward compatibility
@@ -155,6 +156,7 @@ const initialCommanders: Commander[] = [
     personality: 'literalist',
     interpretation: 'Awaiting command...',
     colors: { bg: '#6B7280', border: '#6B7280' }, // Gray
+    avatarImage: '/assets/Gemini_Larry.png',
     executionPlan: [],
     secretBuilds: [],
     currentActionIndex: 0,
@@ -171,6 +173,7 @@ const initialCommanders: Commander[] = [
     personality: 'paranoid',
     interpretation: 'Is this a test?',
     colors: { bg: '#EF4444', border: '#EF4444' }, // Red
+    avatarImage: '/assets/Gemini_Paul.png',
     executionPlan: [],
     secretBuilds: [],
     currentActionIndex: 0,
@@ -187,6 +190,7 @@ const initialCommanders: Commander[] = [
     personality: 'optimist',
     interpretation: "Let's make friends!",
     colors: { bg: '#22C55E', border: '#22C55E' }, // Green
+    avatarImage: '/assets/Gemini_Olivia.png',
     executionPlan: [],
     secretBuilds: [],
     currentActionIndex: 0,

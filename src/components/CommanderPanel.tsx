@@ -4,13 +4,13 @@ import { useGameStore, type Commander } from '../store/useGameStore';
 const CommanderAvatar = ({ commander }: { commander: Commander }) => {
   return (
     <div className="flex items-start gap-3 flex-1">
-      {/* Avatar - using inline styles to ensure colors work */}
-      <div
-        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
-        style={{ backgroundColor: commander.colors.bg }}
-      >
-        {commander.name[0]}
-      </div>
+      {/* Avatar - Portrait Image */}
+      <img
+        src={commander.avatarImage}
+        alt={`${commander.name} portrait`}
+        className="w-10 h-10 rounded-full object-cover border-2 flex-shrink-0"
+        style={{ borderColor: commander.colors.border }}
+      />
 
       {/* Speech Bubble */}
       <div className="flex-1">
@@ -49,13 +49,13 @@ export const CommanderPanel = () => {
           {/* Center: Small avatars in a row */}
           <div className="flex items-center gap-2">
             {commanders.map((commander) => (
-              <div
+              <img
                 key={commander.id}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
-                style={{ backgroundColor: commander.colors.bg }}
-              >
-                {commander.name[0]}
-              </div>
+                src={commander.avatarImage}
+                alt={`${commander.name} portrait`}
+                className="w-8 h-8 rounded-full object-cover border-2"
+                style={{ borderColor: commander.colors.border }}
+              />
             ))}
             <span className="text-gray-400 text-sm ml-2">Commanders Thinking...</span>
           </div>
