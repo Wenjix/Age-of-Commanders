@@ -22,13 +22,78 @@ export const BUILDING_COSTS: Record<BuildingType, number> = {
   farm: 8,
 };
 
-// Building Descriptions
+// Building Descriptions (Old - kept for reference)
 export const BUILDING_DESCRIPTIONS: Record<BuildingType, string> = {
   wall: 'Blocks enemy movement',
   tower: 'Attacks enemies in range',
   decoy: 'Distracts 50% of enemies',
   mine: 'Explodes on contact',
   farm: 'Decorative (does nothing)',
+};
+
+// Building Card Information (New - Evocative & Ambiguous)
+export interface BuildingCardInfo {
+  icon: string;
+  tagline: string;
+  flavorText: string;
+  commanderQuotes: {
+    larry: string;
+    paul: string;
+    olivia: string;
+  };
+}
+
+export const BUILDING_CARDS: Record<BuildingType, BuildingCardInfo> = {
+  wall: {
+    icon: '🧱',
+    tagline: 'A clear boundary',
+    flavorText: 'Sometimes you just need to draw a line in the sand. Or dirt. Or wherever.',
+    commanderQuotes: {
+      larry: 'Exactly as specified.',
+      paul: 'NOT ENOUGH!',
+      olivia: 'Why so unfriendly?',
+    },
+  },
+  tower: {
+    icon: '🗼',
+    tagline: 'Elevated perspective',
+    flavorText: 'See farther, reach farther. What you do with that is up to you.',
+    commanderQuotes: {
+      larry: 'Functional design.',
+      paul: 'Perfect vantage point!',
+      olivia: 'A lighthouse for friends!',
+    },
+  },
+  mine: {
+    icon: '💣',
+    tagline: 'A buried surprise',
+    flavorText: 'Good things come to those who wait. Or bad things. Depends on your perspective.',
+    commanderQuotes: {
+      larry: 'Placed exactly where instructed.',
+      paul: 'PERFECT for intruders!',
+      olivia: 'Oops! Didn\'t see that coming! 😊',
+    },
+  },
+  decoy: {
+    icon: '🎯',
+    tagline: 'A point of interest',
+    flavorText: 'Everyone loves a landmark. Some more than others.',
+    commanderQuotes: {
+      larry: 'Serves its purpose.',
+      paul: 'A clever diversion...',
+      olivia: 'Welcome signs are so inviting!',
+    },
+  },
+  farm: {
+    icon: '🌾',
+    tagline: 'For the long game',
+    flavorText: 'Plant seeds today, reap rewards tomorrow. Probably. Eventually. Maybe.',
+    commanderQuotes: {
+      larry: 'No immediate tactical value.',
+      paul: 'What if it\'s a TRAP?!',
+      olivia: 'Gardens make everything better!',
+    },
+  },
 };
 
 // Color Palette (in hexadecimal for PixiJS)
