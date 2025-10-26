@@ -1,5 +1,5 @@
 import { useGameStore } from '../store/useGameStore';
-import type { Building, Enemy } from '../store/useGameStore';
+import type { Enemy } from '../store/useGameStore';
 
 export interface CombatResult {
   enemiesKilled: number;
