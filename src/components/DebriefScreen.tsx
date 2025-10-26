@@ -45,8 +45,8 @@ export const DebriefScreen = () => {
   const initialWood = 40; // From game constants
   const woodDelta = wood - initialWood;
 
-  // Calculate total enemies killed
-  const enemiesKilled = turnLog.reduce((sum, turn) => sum + (turn.enemiesKilled || 0), 0);
+  // Calculate total enemies killed (count enemy_destroyed events)
+  const enemiesKilled = turnLog.filter(entry => entry.type === 'enemy_destroyed').length;
 
   // Determine outcome
   const outcome: 'victory' | 'defeat' = baseHealth > 0 ? 'victory' : 'defeat';
