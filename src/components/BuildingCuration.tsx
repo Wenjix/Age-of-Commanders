@@ -14,7 +14,6 @@ export const BuildingCuration = () => {
   const uiTheme = useGameStore((state) => state.uiTheme);
 
   const [selectedBuildings, setSelectedBuildings] = useState<BuildingType[]>(enabledBuildings);
-  const [hoveredBuilding, setHoveredBuilding] = useState<BuildingType | null>(null);
 
   if (phase !== 'curate') return null;
 
@@ -44,8 +43,8 @@ export const BuildingCuration = () => {
   };
 
   return (
-    <div className={`fixed inset-0 flex items-center justify-center z-50 p-4 ${theme.overlayBackground} ${theme.overlayBackdrop}`}>
-      <div className={`rounded-xl p-8 max-w-5xl w-full ${theme.cardBackground} ${theme.cardBorder} ${theme.cardShadow}`}>
+    <div className={`fixed inset-0 flex items-start justify-center z-50 p-4 pt-16 ${theme.overlayBackground} ${theme.overlayBackdrop}`}>
+      <div className={`rounded-xl p-8 max-w-5xl w-full max-h-[calc(100vh-5rem)] overflow-y-auto ${theme.cardBackground} ${theme.cardBorder} ${theme.cardShadow}`}>
         <div className="mb-6">
           <h2 className={`text-3xl font-bold mb-3 ${theme.headingText}`}>
             🏗️ Choose Your Buildings
@@ -61,7 +60,6 @@ export const BuildingCuration = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {ALL_BUILDINGS.map((building) => {
             const isSelected = selectedBuildings.includes(building);
-            const isHovered = hoveredBuilding === building;
             const cost = BUILDING_COSTS[building];
             const cardInfo = BUILDING_CARDS[building];
 
@@ -69,8 +67,6 @@ export const BuildingCuration = () => {
               <div
                 key={building}
                 className="relative"
-                onMouseEnter={() => setHoveredBuilding(building)}
-                onMouseLeave={() => setHoveredBuilding(null)}
               >
                 <button
                   onClick={() => toggleBuilding(building)}
@@ -117,54 +113,7 @@ export const BuildingCuration = () => {
                   <p className={`text-sm text-center leading-relaxed ${theme.bodyText}`}>
                     {cardInfo.flavorText}
                   </p>
-
-                  {/* Hover Hint */}
-                  <div className={`text-xs text-center mt-4 ${theme.mutedText} italic`}>
-                    {isHovered ? '💬 Commander reviews below' : '💬 Hover for hints'}
-                  </div>
                 </button>
-
-                {/* Hover Tooltip - Commander Quotes */}
-                {isHovered && (
-                  <div
-                    className={`absolute left-0 right-0 top-full mt-2 p-4 rounded-lg ${theme.cardBackground} ${theme.cardBorder} shadow-xl z-10 animate-fade-in`}
-                  >
-                    <div className="text-xs font-bold mb-2 text-center text-gray-400">
-                      💬 Past Commander Reviews
-                    </div>
-                    <div className="space-y-2">
-                      {/* Larry's Quote */}
-                      <div className="flex items-start gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                          L
-                        </div>
-                        <p className={`text-xs italic ${theme.bodyText}`}>
-                          "{cardInfo.commanderQuotes.larry}"
-                        </p>
-                      </div>
-
-                      {/* Paul's Quote */}
-                      <div className="flex items-start gap-2">
-                        <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                          P
-                        </div>
-                        <p className={`text-xs italic ${theme.bodyText}`}>
-                          "{cardInfo.commanderQuotes.paul}"
-                        </p>
-                      </div>
-
-                      {/* Olivia's Quote */}
-                      <div className="flex items-start gap-2">
-                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                          O
-                        </div>
-                        <p className={`text-xs italic ${theme.bodyText}`}>
-                          "{cardInfo.commanderQuotes.olivia}"
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             );
           })}

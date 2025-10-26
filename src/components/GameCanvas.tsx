@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Application, Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { useGameStore } from '../store/useGameStore';
-import type { Building } from '../store/useGameStore';
+import type { Building, BuildingType } from '../store/useGameStore';
 import {
   TILE_SIZE,
   GRID_SIZE,
@@ -9,6 +9,7 @@ import {
   COLORS,
   Z_LAYERS,
   CAMERA_SETTINGS,
+  BUILDING_CARDS,
   type BuildingQueueItem
 } from '../constants/gameConstants';
 import {
@@ -16,6 +17,7 @@ import {
   getBuildingKey,
   getStyleForType
 } from '../utils/gameUtils';
+import { getThemeStyles } from '../utils/themeStyles';
 
 export const GameCanvas = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -23,6 +25,7 @@ export const GameCanvas = () => {
   const buildings = useGameStore((state) => state.buildings);
   const debriefPanelWidth = useGameStore((state) => state.debriefPanelWidth);
   const setResetZoom = useGameStore((state) => state.setResetZoom);
+  const uiTheme = useGameStore((state) => state.uiTheme);
   const appRef = useRef<Application | null>(null);
   const cameraRef = useRef<Container | null>(null);
   const buildingGraphicsRef = useRef<Map<string, { display: Sprite; type: Building['type'] }>>(new Map());
@@ -32,6 +35,13 @@ export const GameCanvas = () => {
   const renderBuildingsRef = useRef<(() => void) | null>(null);
   const buildingQueueRef = useRef<BuildingQueueItem[]>([]);
   const tickerHandlerRef = useRef<(() => void) | null>(null);
+
+  // State for hover tooltip
+  const [hoveredBuilding, setHoveredBuilding] = useState<{
+    type: BuildingType;
+    mouseX: number;
+    mouseY: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -289,8 +299,22 @@ export const GameCanvas = () => {
             buildingSprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
             buildingSprite.zIndex = Z_LAYERS.BUILDINGS;
             buildingSprite.roundPixels = true;
-            buildingSprite.eventMode = 'none';
+            buildingSprite.eventMode = 'static';
+            buildingSprite.cursor = 'pointer';
             buildingSprite.label = `Building-${building.type}`;
+
+            // Add hover event listeners
+            buildingSprite.on('pointerenter', (event) => {
+              setHoveredBuilding({
+                type: building.type,
+                mouseX: event.global.x,
+                mouseY: event.global.y,
+              });
+            });
+
+            buildingSprite.on('pointerleave', () => {
+              setHoveredBuilding(null);
+            });
 
             // Scale-in animation with bounce effect (easeOutBack)
             buildingSprite.scale.set(0); // Start invisible
@@ -445,11 +469,61 @@ export const GameCanvas = () => {
     renderBuildingsRef.current();
   }, [buildings]);
 
+  const theme = getThemeStyles(uiTheme);
+
   return (
-    <div
-      ref={canvasRef}
-      className="w-full h-full transition-all duration-300"
-      style={{ paddingLeft: `${debriefPanelWidth}px` }}
-    />
+    <>
+      <div
+        ref={canvasRef}
+        className="w-full h-full transition-all duration-300"
+        style={{ paddingLeft: `${debriefPanelWidth}px` }}
+      />
+
+      {/* Building Hover Tooltip */}
+      {hoveredBuilding && (
+        <div
+          className={`fixed w-80 p-4 rounded-lg ${theme.cardBackground} ${theme.cardBorder} shadow-xl z-50 pointer-events-none`}
+          style={{
+            left: `${hoveredBuilding.mouseX + 20}px`,
+            top: `${hoveredBuilding.mouseY + 20}px`,
+          }}
+        >
+          <div className="text-xs font-bold mb-2 text-center text-gray-400">
+            💬 Commander Reviews: {BUILDING_CARDS[hoveredBuilding.type].icon} {hoveredBuilding.type}
+          </div>
+          <div className="space-y-2">
+            {/* Larry's Quote */}
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                L
+              </div>
+              <p className={`text-xs italic ${theme.bodyText}`}>
+                "{BUILDING_CARDS[hoveredBuilding.type].commanderQuotes.larry}"
+              </p>
+            </div>
+
+            {/* Paul's Quote */}
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                P
+              </div>
+              <p className={`text-xs italic ${theme.bodyText}`}>
+                "{BUILDING_CARDS[hoveredBuilding.type].commanderQuotes.paul}"
+              </p>
+            </div>
+
+            {/* Olivia's Quote */}
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                O
+              </div>
+              <p className={`text-xs italic ${theme.bodyText}`}>
+                "{BUILDING_CARDS[hoveredBuilding.type].commanderQuotes.olivia}"
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
