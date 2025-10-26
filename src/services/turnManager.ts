@@ -1,6 +1,6 @@
 import { useGameStore } from '../store/useGameStore';
 import { processEnemyTurn, spawnEnemiesForTurn } from './enemyService';
-import { processCombatPhase } from './combatService';
+import { processCombatPhase, processFarmProduction } from './combatService';
 import type { Building } from '../store/useGameStore';
 import { BUILDING_COSTS } from '../constants/gameConstants';
 
@@ -47,6 +47,9 @@ export async function processTurn(): Promise<TurnResult> {
     description: `Turn ${currentTurn} begins!`,
     impact: 'low',
   });
+
+  // Phase 0: Farm Production (resource generation)
+  processFarmProduction();
 
   // CRITICAL: Spawn enemies for this turn (replaces spawnInitialWave)
   spawnEnemiesForTurn(currentTurn, state.currentAct);

@@ -37,7 +37,7 @@ export const BUILDING_BLOCKS_MOVEMENT: Record<BuildingType, boolean> = {
   tower: true,
   decoy: false,  // Decoy doesn't block - enemies pass through
   mine: true,
-  farm: true,
+  farm: false,  // Farm doesn't block - enemies pass through
 };
 
 // Building Descriptions (Old - kept for reference)
