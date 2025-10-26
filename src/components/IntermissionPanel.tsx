@@ -15,7 +15,11 @@ export const IntermissionPanel = () => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   // CRITICAL: Capture currentTurn on mount so it doesn't change when resumeFromIntermission() increments it
-  const [currentTurn] = useState(() => useGameStore.getState().currentTurn);
+  const [currentTurn] = useState(() => {
+    const turn = useGameStore.getState().currentTurn;
+    console.log('[IntermissionPanel] Captured currentTurn on mount:', turn);
+    return turn;
+  });
   const wood = useGameStore((state) => state.wood);
   const act1Bonus = useGameStore((state) => state.act1Bonus);
   const act2Bonus = useGameStore((state) => state.act2Bonus);
@@ -24,20 +28,14 @@ export const IntermissionPanel = () => {
   const enemiesKilledPerAct = useGameStore((state) => state.enemiesKilledPerAct);
   const updateCommanderInterpretation = useGameStore((state) => state.updateCommanderInterpretation);
 
-  // Determine which act just completed based on turn number
-  // Intermission triggers AFTER turn 8 (end of Act 1) and AFTER turn 16 (end of Act 2)
-  // Act 1: turns 1-8, Act 2: turns 9-16, Act 3: turns 17-30
-  let completedAct: 1 | 2 | 3;
-  if (currentTurn <= 8) {
-    completedAct = 1;
-  } else if (currentTurn <= 16) {
-    completedAct = 2;
-  } else {
-    completedAct = 3;
-  }
-
-  const nextAct = Math.min(completedAct + 1, 3) as 1 | 2 | 3;
+  // HARDCODED: Intermissions trigger at turn 8 (Act 1→2) and turn 16 (Act 2→3)
+  // BUT due to async auto-advance, currentTurn might be 9 or 17 when component mounts
+  // So we check for <= 9 (first intermission) or >= 10 (second intermission)
+  const completedAct: 1 | 2 = currentTurn <= 9 ? 1 : 2;
+  const nextAct: 2 | 3 = currentTurn <= 9 ? 2 : 3;
   const bonus = completedAct === 1 ? act1Bonus : act2Bonus;
+
+  console.log('[IntermissionPanel] currentTurn:', currentTurn, 'completedAct:', completedAct, 'nextAct:', nextAct);
 
   // Get scouting report for next act
   const scoutingReport = getScoutingReport(nextAct);

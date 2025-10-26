@@ -39,6 +39,7 @@ export async function processTurn(): Promise<TurnResult> {
   // Increment turn
   state.nextTurn();
   const currentTurn = state.currentTurn;
+  console.log('[processTurn] Turn incremented to:', currentTurn);
 
   // Log turn start
   state.addTurnLogEntry({
@@ -90,7 +91,9 @@ export async function processTurn(): Promise<TurnResult> {
   // Game always runs to turn 30 or defeat
 
   // Check for intermission after turn 8 or 16 (end of Act 1 and Act 2)
+  console.log('[processTurn] Checking intermission: currentTurn =', currentTurn);
   if (currentTurn === 8 || currentTurn === 16) {
+    console.log('[processTurn] INTERMISSION TRIGGERED at turn', currentTurn);
     // Baseline bonus (scales up for later acts)
     const baselineBonus = currentTurn === 8 ? 10 : 15;
 
