@@ -23,8 +23,10 @@ export const IntermissionPanel = () => {
   const currentAct = useGameStore((state) => state.currentAct);
   const updateCommanderInterpretation = useGameStore((state) => state.updateCommanderInterpretation);
 
+  // Determine which act just completed and which is next
+  const completedAct = currentTurn === 8 ? 1 : 2;
+  const nextAct = currentTurn === 8 ? 2 : 3;
   const bonus = currentTurn === 8 ? act1Bonus : act2Bonus;
-  const nextAct = currentAct + 1;
 
   const handleSubmit = async () => {
     // Prevent empty submissions
@@ -150,12 +152,12 @@ export const IntermissionPanel = () => {
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-slate-800 rounded-lg p-8 max-w-2xl w-full mx-4 border-2 border-amber-500">
         <h2 className="text-3xl font-bold text-amber-400 mb-4">
-          🎭 Intermission: Act {nextAct} Approaching
+          🎭 Intermission: Act {completedAct} Complete!
         </h2>
 
         <div className="bg-slate-700 rounded p-4 mb-6">
           <p className="text-lg text-green-400 font-semibold">
-            Act {currentAct} Bonus: {bonus > 0 ? `+${bonus} wood` : 'None'}
+            Act {completedAct} Bonus: {bonus > 0 ? `+${bonus} wood` : 'None'}
           </p>
           <p className="text-lg text-blue-400">
             Current Wood: {wood}
