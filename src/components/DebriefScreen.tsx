@@ -33,6 +33,7 @@ export const DebriefScreen = () => {
   const turnLog = useGameStore((state) => state.turnLog);
   const baseHealth = useGameStore((state) => state.baseHealth);
   const currentTurn = useGameStore((state) => state.currentTurn);
+  const maxTurns = useGameStore((state) => state.maxTurns);
   const enemies = useGameStore((state) => state.enemies);
   const revealAllBuildings = useGameStore((state) => state.revealAllBuildings);
   const revealBuilding = useGameStore((state) => state.revealBuilding);
@@ -300,7 +301,7 @@ export const DebriefScreen = () => {
             </div>
             <div className="flex justify-between">
               <span className={`${theme.mutedText} text-sm`}>Wood Used</span>
-              <span className={`${theme.headingText} text-xl font-bold`}>{totalWoodUsed}/50</span>
+              <span className={`${theme.headingText} text-xl font-bold`}>{totalWoodUsed}</span>
             </div>
             <div className="flex justify-between">
               <span className={`${theme.mutedText} text-sm`}>Wood Remaining</span>
@@ -401,7 +402,7 @@ export const DebriefScreen = () => {
         {turnLog.length > 0 && (
           <div className={`${theme.buildingCardBackground} ${theme.cardBorder} rounded-lg p-4`}>
             <h3 className={`${theme.headingText} text-lg font-bold mb-3`}>
-              📜 Battle Chronicle (Turn {currentTurn}/{10})
+              📜 Battle Chronicle (Turn {currentTurn}/{maxTurns})
             </h3>
 
             {/* Victory/Defeat Status */}
