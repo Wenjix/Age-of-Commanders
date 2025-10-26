@@ -88,7 +88,7 @@ export const BuildingCuration = () => {
 
                   {/* Cost Badge */}
                   <div className="absolute top-3 left-3 px-3 py-1 bg-yellow-600 rounded-full text-white text-xs font-bold shadow-md">
-                    💰 {cost}
+                    🪵 {cost}
                   </div>
 
                   {/* Icon */}

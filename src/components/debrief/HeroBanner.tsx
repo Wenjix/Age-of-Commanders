@@ -106,7 +106,7 @@ export const HeroBanner = ({
             delay={200}
           />
           <StatBadge
-            icon="💰"
+            icon="🪵"
             label={`${woodDelta > 0 ? '+' : ''}${woodDelta} wood`}
             delay={400}
           />
