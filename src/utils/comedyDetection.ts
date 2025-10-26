@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Commander, Personality } from '../store/useGameStore';
 
 // Comedy keyword scoring

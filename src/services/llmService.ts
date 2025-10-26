@@ -201,8 +201,7 @@ Interpret the NEW command considering your personality and the current state.`;
  */
 export function interpretSkipAsCommand(
   personality: Personality,
-  lastCommand: string | undefined,
-  gameState: { wood: number }
+  lastCommand: string | undefined
 ): Action[] {
   switch (personality) {
     case 'literalist':

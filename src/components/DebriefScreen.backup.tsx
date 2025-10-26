@@ -25,6 +25,9 @@ const PERSONALITY_EMOJIS = {
   optimist: '😊',
 };
 
+// Commander reveal order (constant across all debrief screens)
+const COMMANDER_REVEAL_ORDER = ['larry', 'paul', 'olivia'];
+
 export const DebriefScreen = () => {
   const phase = useGameStore((state) => state.phase);
   const commanders = useGameStore((state) => state.commanders);
@@ -55,9 +58,6 @@ export const DebriefScreen = () => {
     timeoutIdsRef.current.forEach((id) => clearTimeout(id));
     timeoutIdsRef.current = [];
   };
-
-  // Explicit commander ordering for consistent reveal sequence
-  const COMMANDER_REVEAL_ORDER = ['larry', 'paul', 'olivia'];
 
   // Get last command from localStorage
   const lastCommand = localStorage.getItem('lastCommand') || 'Defend the base';

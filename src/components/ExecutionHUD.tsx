@@ -19,7 +19,6 @@ export const ExecutionHUD: React.FC = () => {
   const enemies = useGameStore((state) => state.enemies);
   const pauseGame = useGameStore((state) => state.pauseGame);
   const resumeGame = useGameStore((state) => state.resumeGame);
-  const setPhase = useGameStore((state) => state.setPhase);
   const isIntermission = useGameStore((state) => state.isIntermission);
 
   // Keyboard controls

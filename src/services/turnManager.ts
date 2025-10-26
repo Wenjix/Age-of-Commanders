@@ -1,7 +1,7 @@
 import { useGameStore } from '../store/useGameStore';
 import { processEnemyTurn, spawnEnemiesForTurn } from './enemyService';
 import { processCombatPhase, processFarmProduction } from './combatService';
-import type { Building } from '../store/useGameStore';
+import type { Building, Commander } from '../store/useGameStore';
 import { BUILDING_COSTS } from '../constants/gameConstants';
 
 export interface TurnResult {
@@ -87,9 +87,9 @@ export async function processTurn(): Promise<TurnResult> {
   }
 
   // REMOVED: Early victory condition (all enemies defeated)
-  // Game always runs to turn 24 or defeat
+  // Game always runs to turn 30 or defeat
 
-  // Check for intermission after turn 8 or 16
+  // Check for intermission after turn 8 or 16 (end of Act 1 and Act 2)
   if (currentTurn === 8 || currentTurn === 16) {
     // Baseline bonus (scales up for later acts)
     const baselineBonus = currentTurn === 8 ? 10 : 15;
@@ -227,7 +227,7 @@ async function processCommanderBuilds(turn: number): Promise<number> {
 
 // Handle building failure
 function handleBuildFailure(
-  commander: any,
+  commander: Commander,
   building: Building,
   turn: number,
   reason: 'no_wood' | 'occupied'

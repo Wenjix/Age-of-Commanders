@@ -7,6 +7,7 @@ export const TopBar = () => {
   const debriefPanelWidth = useGameStore((state) => state.debriefPanelWidth);
   const currentAct = useGameStore((state) => state.currentAct);
   const currentTurn = useGameStore((state) => state.currentTurn);
+  const maxTurns = useGameStore((state) => state.maxTurns);
   const phase = useGameStore((state) => state.phase);
 
   const handleResetZoom = () => {
@@ -25,7 +26,7 @@ export const TopBar = () => {
         {phase === 'execute' && (
           <div className="flex items-center gap-2">
             <span className="text-amber-400 font-bold">Act {currentAct}/3</span>
-            <span className="text-slate-300">Turn {currentTurn}/24</span>
+            <span className="text-slate-300">Turn {currentTurn}/{maxTurns}</span>
           </div>
         )}
       </div>

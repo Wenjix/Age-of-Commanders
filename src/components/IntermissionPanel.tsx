@@ -21,14 +21,22 @@ export const IntermissionPanel = () => {
   const commanders = useGameStore((state) => state.commanders);
   const apiKey = useGameStore((state) => state.apiKey);
   const enemiesKilledPerAct = useGameStore((state) => state.enemiesKilledPerAct);
-  const currentAct = useGameStore((state) => state.currentAct);
   const updateCommanderInterpretation = useGameStore((state) => state.updateCommanderInterpretation);
 
-  // Determine which act just completed and which is next
-  const completedAct = currentTurn === 8 ? 1 : 2;
-  const nextAct = (currentTurn === 8 ? 2 : 3) as 1 | 2 | 3;
-  const bonus = currentTurn === 8 ? act1Bonus : act2Bonus;
-  
+  // Determine which act just completed and which is next based on turn number
+  // Act 1: turns 1-8, Act 2: turns 9-16, Act 3: turns 17-30
+  let completedAct: 1 | 2 | 3;
+  if (currentTurn <= 8) {
+    completedAct = 1;
+  } else if (currentTurn <= 16) {
+    completedAct = 2;
+  } else {
+    completedAct = 3;
+  }
+
+  const nextAct = Math.min(completedAct + 1, 3) as 1 | 2 | 3;
+  const bonus = completedAct === 1 ? act1Bonus : act2Bonus;
+
   // Get scouting report for next act
   const scoutingReport = getScoutingReport(nextAct);
 
@@ -115,8 +123,7 @@ export const IntermissionPanel = () => {
     commanders.forEach((commander) => {
       const builds = interpretSkipAsCommand(
         commander.personality,
-        commander.lastCommand,
-        { wood }
+        commander.lastCommand
       ).map(action => ({
         position: action.position,
         type: action.building,

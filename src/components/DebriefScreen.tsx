@@ -7,7 +7,7 @@ import {
   type GameStats,
 } from '../utils/comedyDetection';
 import { cleanTextForDisplay } from '../utils/textFormatting';
-import { clusterTurns, selectTopMoments, extractBestMoment } from '../utils/timelineUtils';
+import { clusterTurns, selectTopMoments } from '../utils/timelineUtils';
 import toast from 'react-hot-toast';
 
 // Import new debrief components
@@ -19,6 +19,9 @@ import { ActionFooter } from './debrief/ActionFooter';
 
 // Import styles
 import './debrief/debrief.css';
+
+// Commander reveal order (constant across all debrief screens)
+const COMMANDER_REVEAL_ORDER = ['larry', 'paul', 'olivia'];
 
 export const DebriefScreen = () => {
   const phase = useGameStore((state) => state.phase);
@@ -50,9 +53,6 @@ export const DebriefScreen = () => {
 
   // Determine outcome
   const outcome: 'victory' | 'defeat' = baseHealth > 0 ? 'victory' : 'defeat';
-
-  // Explicit commander ordering
-  const COMMANDER_REVEAL_ORDER = ['larry', 'paul', 'olivia'];
 
   // Helper to clear all pending timeouts
   const clearAllRevealTimeouts = () => {
@@ -133,7 +133,7 @@ export const DebriefScreen = () => {
   
   // Find best reaction (most interesting commander reaction)
   const bestReaction = buildingsByCommander
-    .map(({ commander, buildings: commanderBuildings }) => ({
+    .map(({ commander }) => ({
       commander: commander.name,
       reaction: cleanTextForDisplay(generateReaction(commander, stats)),
     }))

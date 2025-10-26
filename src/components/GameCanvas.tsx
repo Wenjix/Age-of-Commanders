@@ -18,13 +18,18 @@ import {
 } from '../utils/gameUtils';
 import { getThemeStyles } from '../utils/themeStyles';
 
+// Extended Container type with custom animation properties
+interface ExtendedContainer extends Container {
+  _targetX?: number;
+  _targetY?: number;
+}
+
 export const GameCanvas = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const basePosition = useGameStore((state) => state.basePosition);
   const buildings = useGameStore((state) => state.buildings);
   const enemies = useGameStore((state) => state.enemies);
   const baseHealth = useGameStore((state) => state.baseHealth);
-  const commanderThoughts = useGameStore((state) => state.commanderThoughts);
   const debriefPanelWidth = useGameStore((state) => state.debriefPanelWidth);
   const setResetZoom = useGameStore((state) => state.setResetZoom);
   const uiTheme = useGameStore((state) => state.uiTheme);
@@ -36,7 +41,6 @@ export const GameCanvas = () => {
   const buildingsRef = useRef<Building[]>([]);
   const enemiesRef = useRef<Enemy[]>([]);
   const enemyGraphicsRef = useRef<Map<string, Container>>(new Map());
-  const thoughtBubblesRef = useRef<Map<string, Container>>(new Map());
   const baseEmojiRef = useRef<Text | null>(null);
   const renderBuildingsRef = useRef<(() => void) | null>(null);
   const renderEnemiesRef = useRef<(() => void) | null>(null);
@@ -519,8 +523,8 @@ export const GameCanvas = () => {
             enemyContainer.cursor = 'pointer';
 
             // Initialize target position tracking for smooth animation
-            (enemyContainer as any)._targetX = enemy.position[0] * TILE_SIZE;
-            (enemyContainer as any)._targetY = enemy.position[1] * TILE_SIZE;
+            (enemyContainer as ExtendedContainer)._targetX = enemy.position[0] * TILE_SIZE;
+            (enemyContainer as ExtendedContainer)._targetY = enemy.position[1] * TILE_SIZE;
 
             // Add hover event listeners
             enemyContainer.on('pointerenter', (event) => {
@@ -556,8 +560,8 @@ export const GameCanvas = () => {
             const newY = enemy.position[1] * TILE_SIZE;
 
             // Check if position has changed (use custom property to track)
-            const prevX = (container as any)._targetX ?? container.position.x;
-            const prevY = (container as any)._targetY ?? container.position.y;
+            const prevX = (container as ExtendedContainer)._targetX ?? container.position.x;
+            const prevY = (container as ExtendedContainer)._targetY ?? container.position.y;
 
             if (prevX !== newX || prevY !== newY) {
               // Position changed, animate the movement
@@ -582,8 +586,8 @@ export const GameCanvas = () => {
               animate();
 
               // Store target position for next frame
-              (container as any)._targetX = newX;
-              (container as any)._targetY = newY;
+              (container as ExtendedContainer)._targetX = newX;
+              (container as ExtendedContainer)._targetY = newY;
             }
 
             // Update appearance if marked for death
