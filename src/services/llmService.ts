@@ -1,5 +1,5 @@
 import pLimit from 'p-limit';
-import type { Personality, Action } from '../store/useGameStore';
+import type { Personality, Action, BuildingType } from '../store/useGameStore';
 
 // Dynamic limit - will be created based on store value
 let currentLimit = pLimit(3);
@@ -204,43 +204,85 @@ Interpret the NEW command considering your personality and the current state.`;
 
 /**
  * NEW: Generate personality-based builds when player skips
+ * Only uses buildings from enabledBuildings (curated list).
  */
 export function interpretSkipAsCommand(
   personality: Personality,
-  lastCommand: string | undefined
+  lastCommand: string | undefined,
+  enabledBuildings: BuildingType[]
 ): Action[] {
+  // If no curated buildings, return empty plan
+  if (enabledBuildings.length === 0) {
+    return [];
+  }
+
+  // Helper: Check if a building type is available in curated list
+  const hasBuilding = (type: BuildingType) => enabledBuildings.includes(type);
+
+  // Helper: Get preferred building from list, or fallback to first available
+  const getPreferredBuilding = (preferred: BuildingType[]): BuildingType => {
+    for (const type of preferred) {
+      if (hasBuilding(type)) return type;
+    }
+    return enabledBuildings[0]; // Fallback to first available
+  };
+
   switch (personality) {
     case 'literalist':
       // Repeat last build if possible, else do nothing
-      return lastCommand ? generateExecutionPlan(lastCommand, personality).slice(0, 1) : [];
+      return lastCommand ? generateExecutionPlan(lastCommand, personality, enabledBuildings).slice(0, 1) : [];
 
-    case 'paranoid':
-      // Build defensive structures near base
+    case 'paranoid': {
+      // Build defensive structures near base (prefer wall, mine, tower)
+      const defensive1 = getPreferredBuilding(['wall', 'mine', 'tower']);
+      const defensive2 = getPreferredBuilding(['mine', 'wall', 'tower']);
       return [
-        { type: 'build', building: 'wall', position: [11, 11] },
-        { type: 'build', building: 'mine', position: [13, 11] },
+        { type: 'build', building: defensive1, position: [11, 11] },
+        { type: 'build', building: defensive2, position: [13, 11] },
       ];
+    }
 
-    case 'optimist':
-      // Spend on "fun" builds
-      return [
-        { type: 'build', building: 'decoy', position: [10, 8] },
-        { type: 'build', building: 'farm', position: [14, 8] },
-      ];
+    case 'optimist': {
+      // Build a mix: decoy (greeting station) + farm (feeding guests)
+      const builds: Action[] = [];
 
-    case 'ruthless':
-      // Build aggressive offensive structures
-      return [
-        { type: 'build', building: 'tower', position: [12, 10] },
-        { type: 'build', building: 'tower', position: [13, 10] },
-      ];
+      if (hasBuilding('decoy')) {
+        // Build decoy thinking it's a greeting station
+        builds.push({ type: 'build', building: 'decoy', position: [10, 8] });
+      }
 
-    case 'trickster':
-      // Build confusing/deceptive structures
+      if (hasBuilding('farm')) {
+        // Build farm thinking it's preparing food for visitors
+        builds.push({ type: 'build', building: 'farm', position: [14, 8] });
+      }
+
+      // If only one type available, build two of that type
+      if (builds.length === 1) {
+        const buildingType = builds[0].building;
+        builds.push({ type: 'build', building: buildingType, position: [12, 8] });
+      }
+
+      return builds;
+    }
+
+    case 'ruthless': {
+      // Build aggressive offensive structures (prefer tower, mine)
+      const offensive = getPreferredBuilding(['tower', 'mine', 'wall']);
       return [
-        { type: 'build', building: 'decoy', position: [11, 9] },
-        { type: 'build', building: 'mine', position: [14, 9] },
+        { type: 'build', building: offensive, position: [12, 10] },
+        { type: 'build', building: offensive, position: [13, 10] },
       ];
+    }
+
+    case 'trickster': {
+      // Build confusing/deceptive structures (prefer decoy, mine)
+      const tricky1 = getPreferredBuilding(['decoy', 'mine']);
+      const tricky2 = getPreferredBuilding(['mine', 'decoy']);
+      return [
+        { type: 'build', building: tricky1, position: [11, 9] },
+        { type: 'build', building: tricky2, position: [14, 9] },
+      ];
+    }
   }
 }
 
@@ -264,14 +306,30 @@ export function getSkipThought(personality: Personality): string {
 
 /**
  * Parses an LLM interpretation and generates an execution plan based on keywords
- * and commander personality.
+ * and commander personality. Only uses buildings from enabledBuildings (curated list).
  */
 export function generateExecutionPlan(
   interpretation: string,
-  personality: Personality
+  personality: Personality,
+  enabledBuildings: BuildingType[]
 ): Action[] {
+  // If no curated buildings, return empty plan
+  if (enabledBuildings.length === 0) {
+    return [];
+  }
   const plan: Action[] = [];
   const lowerInterpretation = interpretation.toLowerCase();
+
+  // Helper: Check if a building type is available in curated list
+  const hasBuilding = (type: BuildingType) => enabledBuildings.includes(type);
+
+  // Helper: Get preferred building from list, or fallback to first available
+  const getPreferredBuilding = (preferred: BuildingType[], fallback?: BuildingType): BuildingType => {
+    for (const type of preferred) {
+      if (hasBuilding(type)) return type;
+    }
+    return fallback && hasBuilding(fallback) ? fallback : enabledBuildings[0];
+  };
 
   // Count keyword mentions
   const wallMentions = (lowerInterpretation.match(/wall/g) || []).length;
@@ -281,9 +339,9 @@ export function generateExecutionPlan(
 
   // Personality-based strategies
   switch (personality) {
-    case 'literalist':
+    case 'literalist': {
       // Literalist builds exactly what's mentioned, prefers north defense
-      if (wallMentions > 0) {
+      if (wallMentions > 0 && hasBuilding('wall')) {
         // Build walls along north edge
         for (let i = 0; i < Math.min(wallMentions, 4); i++) {
           plan.push({
@@ -293,7 +351,7 @@ export function generateExecutionPlan(
           });
         }
       }
-      if (towerMentions > 0) {
+      if (towerMentions > 0 && hasBuilding('tower')) {
         // Build towers along north edge
         for (let i = 0; i < Math.min(towerMentions, 2); i++) {
           plan.push({
@@ -303,17 +361,21 @@ export function generateExecutionPlan(
           });
         }
       }
-      // Default: if defense mentioned but no specific building, build walls
+      // Default: if defense mentioned but no specific building, use any defensive building
       if (defenseMentions > 0 && wallMentions === 0 && towerMentions === 0) {
-        for (let i = 0; i < 3; i++) {
-          plan.push({
-            type: 'build',
-            building: 'wall',
-            position: [10 + i, i],
-          });
+        const defensiveBuilding = getPreferredBuilding(['wall', 'tower', 'mine']);
+        if (defensiveBuilding) {
+          for (let i = 0; i < 3; i++) {
+            plan.push({
+              type: 'build',
+              building: defensiveBuilding,
+              position: [10 + i, i],
+            });
+          }
         }
       }
       break;
+    }
 
     case 'paranoid': {
       // Paranoid prioritizes base perimeter defense
@@ -328,62 +390,102 @@ export function generateExecutionPlan(
         [11, 14], // Extra below base
       ];
 
-      // Paranoid always builds defensive structures
+      // Paranoid always builds defensive structures (prefer towers, then walls, then mines)
       const paranoidBuildCount = Math.min(
         Math.max(wallMentions + towerMentions, 4),
         baseDefensePositions.length
       );
 
-      for (let i = 0; i < paranoidBuildCount; i++) {
-        // Alternate between walls and towers, favor towers
-        plan.push({
-          type: 'build',
-          building: i % 3 === 0 ? 'tower' : 'wall',
-          position: baseDefensePositions[i],
-        });
+      // Get available defensive buildings in order of preference
+      const primaryDefense = getPreferredBuilding(['tower', 'wall', 'mine']);
+      const secondaryDefense = getPreferredBuilding(['wall', 'mine', 'tower']);
+
+      if (primaryDefense) {
+        for (let i = 0; i < paranoidBuildCount; i++) {
+          // Alternate between primary and secondary defensive buildings
+          const building = (i % 3 === 0 && secondaryDefense) ? secondaryDefense : primaryDefense;
+          plan.push({
+            type: 'build',
+            building,
+            position: baseDefensePositions[i],
+          });
+        }
       }
       break;
     }
 
-    case 'optimist':
-      // Optimist creates welcome signs and decorative structures
-      if (welcomeMentions > 0 || lowerInterpretation.includes('sign')) {
-        // Build welcome sign
+    case 'optimist': {
+      // Optimist misinterprets commands: builds farms (economic) thinking they're feeding guests,
+      // and decoys (tactical) thinking they're greeting stations for "friendly visitors"
+
+      // Check for resource/economic keywords → build farms
+      const resourceMentions = (lowerInterpretation.match(/resource|supply|prepar|prosper|food|feed/g) || []).length;
+
+      // Check for welcome/greeting keywords → build decoys
+      // Note: decoys are tactical (distract 50% enemies), but optimist thinks they're greeting stations
+
+      if (resourceMentions > 0 && hasBuilding('farm')) {
+        // Build farms thinking we're preparing food for guests
+        const farmPositions: [number, number][] = [[10, 6], [12, 6], [14, 6]];
+        for (let i = 0; i < Math.min(resourceMentions, 2); i++) {
+          plan.push({
+            type: 'build',
+            building: 'farm',
+            position: farmPositions[i],
+          });
+        }
+      }
+
+      if ((welcomeMentions > 0 || lowerInterpretation.includes('sign')) && hasBuilding('decoy')) {
+        // Build decoys thinking they're welcome signs
         plan.push({
           type: 'build',
-          building: 'farm',
+          building: 'decoy',
           position: [10, 5],
         });
       }
 
       // Optimist interprets "defense" as "welcoming decorations"
       if (defenseMentions > 0 || wallMentions > 0 || towerMentions > 0) {
-        // Build decorative "welcome path" with welcome signs
-        const decorativePositions: [number, number][] = [
-          [12, 5],
-          [14, 5],
-          [10, 7],
-          [14, 7],
-        ];
-
-        for (let i = 0; i < Math.min(decorativePositions.length, 3); i++) {
+        // Build decoys if available (thinks they're greeting stations)
+        if (hasBuilding('decoy')) {
+          const greetingPositions: [number, number][] = [[12, 5], [14, 5], [10, 7]];
+          for (let i = 0; i < Math.min(greetingPositions.length, 2); i++) {
+            plan.push({
+              type: 'build',
+              building: 'decoy',
+              position: greetingPositions[i],
+            });
+          }
+        }
+        // Otherwise build farms (thinks they're preparing feast for visitors)
+        else if (hasBuilding('farm')) {
           plan.push({
             type: 'build',
             building: 'farm',
-            position: decorativePositions[i],
+            position: [10, 6],
           });
         }
       }
 
-      // If no keywords, still build at least one welcome sign
+      // If no specific keywords, build whatever is available (prefer decoy for "greeting", else farm)
       if (plan.length === 0) {
-        plan.push({
-          type: 'build',
-          building: 'farm',
-          position: [10, 5],
-        });
+        if (hasBuilding('decoy')) {
+          plan.push({
+            type: 'build',
+            building: 'decoy',
+            position: [10, 5],
+          });
+        } else if (hasBuilding('farm')) {
+          plan.push({
+            type: 'build',
+            building: 'farm',
+            position: [10, 6],
+          });
+        }
       }
       break;
+    }
   }
 
   return plan.slice(0, 3); // CHANGED: Max 3 builds per act

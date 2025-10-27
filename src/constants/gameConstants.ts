@@ -46,7 +46,7 @@ export const BUILDING_DESCRIPTIONS: Record<BuildingType, string> = {
   tower: 'Attacks enemies in range',
   decoy: 'Distracts 50% of enemies',
   mine: 'Explodes on contact',
-  farm: 'Decorative (does nothing)',
+  farm: 'Generates +2 wood per turn',
 };
 
 // Building Card Information (New - Evocative & Ambiguous)

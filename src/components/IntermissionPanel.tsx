@@ -26,6 +26,7 @@ export const IntermissionPanel = () => {
   const commanders = useGameStore((state) => state.commanders);
   const apiKey = useGameStore((state) => state.apiKey);
   const enemiesKilledPerAct = useGameStore((state) => state.enemiesKilledPerAct);
+  const enabledBuildings = useGameStore((state) => state.enabledBuildings);
   const updateCommanderInterpretation = useGameStore((state) => state.updateCommanderInterpretation);
 
   // HARDCODED: Intermissions trigger at turn 8 (Act 1→2) and turn 16 (Act 2→3)
@@ -73,7 +74,7 @@ export const IntermissionPanel = () => {
 
         // Generate execution plan (max 3 builds)
         const commander = commanders.find(c => c.id === commanderId)!;
-        const plan = generateExecutionPlan(interpretation, commander.personality);
+        const plan = generateExecutionPlan(interpretation, commander.personality, enabledBuildings);
 
         // Convert plan to buildings
         const builds = plan.map(action => ({
@@ -123,7 +124,8 @@ export const IntermissionPanel = () => {
     commanders.forEach((commander) => {
       const builds = interpretSkipAsCommand(
         commander.personality,
-        commander.lastCommand
+        commander.lastCommand,
+        enabledBuildings
       ).map(action => ({
         position: action.position,
         type: action.building,
